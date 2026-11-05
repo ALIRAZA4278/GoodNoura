@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product – Good Noura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+  .pdp { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; padding-top: 18px; align-items: start; }
+  .gallery { display: grid; grid-template-columns: 76px 1fr; gap: 12px; position: sticky; top: 96px; }
+  .thumbs { display: flex; flex-direction: column; gap: 10px; }
+  .thumb { aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--line); background: var(--card); overflow: hidden; padding: 0; position: relative; }
+  .thumb[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+  .thumb > div, .thumb > img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+  .thumb .ph { transform: scale(.25); transform-origin: top left; width: 400%; height: 400%; }
+  .thumb .ph-tag { display: none; }
+  .main-photo { position: relative; aspect-ratio: 1; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--tile); }
+  .main-photo > img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-label { position: absolute; top: 12px; left: 12px; background: rgba(31,20,14,.85); border: 1px solid var(--line); color: var(--cream); font-size: 11px; padding: 4px 9px; border-radius: 6px; z-index: 2; }
+  .arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: rgba(31,20,14,.85); border: 1px solid var(--line); color: var(--cream); display: grid; place-items: center; z-index: 2; }
+  .arrow.prev { left: 12px; } .arrow.next { right: 12px; }
+  .photo-note { font-size: 11.5px; color: var(--muted); margin: 8px 0 0; grid-column: 2; }
+
+  .info .loved { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 12px; }
+  .faces { display: flex; }
+  .faces span { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--bg); margin-left: -6px; display: grid; place-items: center; font-size: 10px; font-weight: 700; color: var(--gold-ink); }
+  .faces span:first-child { margin-left: 0; }
+  .info .loved b { display: block; }
+  .info .loved small { color: var(--muted); }
+  .info h1 { font-size: 40px; line-height: 1.08; margin: 10px 0 6px; }
+  .rating { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .rating a { color: var(--gold); text-decoration: none; }
+  .in-bundles { font-size: 12px; color: var(--muted); margin: -6px 0 16px; padding: 8px 10px; border-left: 2px solid var(--gold); background: rgba(232,176,75,.05); }
+  .in-bundles a { color: var(--gold); font-weight: 600; text-decoration: none; }
+  .in-bundles span { color: var(--muted); }
+  .reviews { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 1000px) { .reviews { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 620px) { .reviews { grid-template-columns: 1fr; } }
+  .info .desc { font-size: 14px; margin: 0 0 16px; }
+  .big-price { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .big-price .price { font-size: 34px; }
+  .online-box { display: flex; align-items: center; gap: 10px; background: rgba(124,196,127,.08); border: 1px solid rgba(124,196,127,.35); border-radius: 8px; padding: 9px 12px; font-size: 12.5px; margin: 10px 0 18px; }
+  .online-box b { color: var(--green); }
+  .label { font-size: 12px; font-weight: 600; margin: 0 0 8px; }
+  .info .opts .opt { padding: 10px 12px; font-size: 13px; }
+  .info .opts .opt small { font-size: 11.5px; }
+  .buy { display: grid; grid-template-columns: auto 1fr; gap: 10px; margin: 6px 0 10px; }
+  .buy .qty { height: 44px; }
+  .buy .qty button { width: 34px; height: 42px; }
+  .buy .add { padding: 0 12px; height: 44px; }
+  .buy-now { width: 100%; height: 44px; background: transparent; border: 1px solid var(--gold); color: var(--cream); border-radius: 8px; font-weight: 700; }
+  .stock { font-size: 12px; color: var(--green); margin: 14px 0 18px; display: flex; align-items: center; gap: 7px; }
+  .stock::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .feats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; padding: 16px 8px; margin-bottom: 14px; }
+  .feats i { width: 38px; height: 38px; border: 1px solid var(--gold); color: var(--gold); border-radius: 50%; display: grid; place-items: center; margin: 0 auto 8px; }
+  .feats i svg { width: 17px; height: 17px; }
+  .feats b { display: block; font-size: 11.5px; }
+  .feats span { font-size: 11px; color: var(--muted); }
+
+  .recipe { display: grid; grid-template-columns: 1.2fr 1fr; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: #f4ead9; color: #3a2116; min-height: 260px; }
+  .recipe .txt { padding: 30px 34px; }
+  .recipe h3 { color: #3a2116; font-size: 28px; margin: 0 0 6px; }
+  .recipe .hl { display: inline-block; background: #8e3c19; color: #f4ead9; font-weight: 700; padding: 4px 10px; border-radius: 4px; margin-bottom: 14px; }
+  .recipe ol { margin: 0; padding-left: 18px; font-size: 13.5px; display: grid; gap: 4px; }
+  .recipe .art { position: relative; }
+
+  .two { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; }
+  .two h2 { font-size: 30px; margin: 0 0 12px; }
+  .size-card { display: flex; gap: 18px; align-items: center; padding: 16px 18px; margin-bottom: 12px; }
+  .size-card .w { font: 600 32px var(--serif); color: var(--gold); min-width: 90px; }
+  .size-card b { font-size: 13px; }
+  .size-card p { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+
+  @media (max-width: 900px) {
+    .pdp { grid-template-columns: 1fr; gap: 22px; }
+    .gallery { position: static; grid-template-columns: 1fr; }
+    .thumbs { flex-direction: row; order: 2; overflow-x: auto; }
+    .thumb { width: 64px; flex: none; }
+    .photo-note { grid-column: 1; order: 3; }
+    .two { grid-template-columns: 1fr; gap: 32px; }
+    .recipe { grid-template-columns: 1fr; }
+    .recipe .art { min-height: 220px; }
+  }
+  @media (max-width: 520px) {
+    .info h1 { font-size: 32px; }
+    .feats { grid-template-columns: repeat(2, 1fr); row-gap: 14px; }
+    .recipe .txt { padding: 22px 20px; }
+  }
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+
+<main class="wrap">
+  <div class="crumbs" id="crumbs"></div>
+  <section class="pdp">
+    <div class="gallery">
+      <div class="thumbs" id="thumbs"></div>
+      <div class="main-photo" id="mainPhoto"></div>
+      <p class="photo-note" id="photoNote"></p>
+    </div>
+    <div class="info" id="info"></div>
+  </section>
+
+  <section class="section" id="packSection">
+    <div class="section-head"><h2 id="packTitle">Choose Your Pack</h2><p id="packSub">More ways to snack, share and stock up.</p></div>
+    <div class="grid compact" id="pack"></div>
+  </section>
+
+  <section class="section" id="reviews" style="scroll-margin-top:90px">
+    <div class="section-head"><h2>A Little Love from Our Customers</h2></div>
+    <div class="reviews" id="reviewList"></div>
+  </section>
+
+  <section class="section" id="deliverySlot"></section>
+
+  <section class="section">
+    <div class="section-head"><h2>How to Enjoy</h2></div>
+    <div class="tiles" id="enjoy"></div>
+    <div class="promo" style="margin-top:14px" id="proMove"></div>
+  </section>
+
+  <section class="section">
+    <div class="recipe">
+      <div class="txt">
+        <span class="eyebrow" style="color:#8e3c19">Recipe</span>
+        <h3>Try it this way</h3>
+        <span class="hl" id="recipeName"></span>
+        <ol id="recipeSteps"></ol>
+      </div>
+      <div class="art"><div class="ph" style="background:linear-gradient(160deg,#d9a566,#b7773d)" id="recipeArt"></div></div>
+    </div>
+  </section>
+
+  <section class="section two">
+    <div>
+      <h2>Simple. Honest. Made with care.</h2>
+      <p class="muted" id="story"></p>
+      <div class="acc">
+        <details open><summary>Ingredients</summary><p id="ingredients"></p></details>
+        <details><summary>Storage</summary><p>Keep in a cool, dry place out of direct sunlight, and always use a clean, dry spoon. Best enjoyed within 30 days of opening the jar. Seeing a little oil on top? That's just the natural nut oil rising — give it a good stir.</p></details>
+        <details><summary>Allergen information</summary><p id="allergen">Contains tree nuts and/or peanuts. [Add factory allergen statement.]</p></details>
+        <details><summary>Delivery &amp; payment</summary><p>Free delivery all over Pakistan. Karachi in 24–48 hrs, other cities in 4–6 business days. Pay cash on delivery, or pay online and save 10%.</p></details>
+      </div>
+    </div>
+    <div id="sideCol"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Complete the Pantry</h2></div>
+    <div class="grid cols-4" id="pantry"></div>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+<script src="site.js"></script>
+<script>
+  const { ico, fmt } = GN;
+  const p = GN.byId(new URLSearchParams(location.search).get("p")) || GN.products[0];
+  GN.init(p.type === "bundles" ? "Bundles" : "Shop all");
+  document.title = `${p.name} – Good Noura`;
+  document.getElementById("crumbs").innerHTML =
+    `<a href="index.html">Home</a> › <a href="bundles.html${p.type === "bundles" ? "?filter=bundles" : ""}">${p.type === "bundles" ? "Bundles" : "Shop"}</a> › <b>${p.name}</b>`;
+
+  // Gallery
+  const shots = GN.photos(p);
+  let cur = 0;
+  function showPhoto(i) {
+    cur = (i + shots.length) % shots.length;
+    document.getElementById("mainPhoto").innerHTML = `${p.gallery ? "" : `<span class="photo-label">${cur + 1}/${shots.length} · ${shots[cur].label}</span>`}
+      ${shots[cur].html}
+      <button class="arrow prev" aria-label="Previous photo" onclick="showPhoto(cur-1)">‹</button>
+      <button class="arrow next" aria-label="Next photo" onclick="showPhoto(cur+1)">›</button>`;
+    document.getElementById("photoNote").textContent = shots[cur].note || "";
+    document.querySelectorAll(".thumb").forEach((t, j) => t.setAttribute("aria-pressed", j === cur));
+  }
+  document.getElementById("thumbs").innerHTML = shots.map((s, i) =>
+    `<button class="thumb" aria-label="${s.label}" onclick="showPhoto(${i})">${s.html}</button>`).join("");
+  showPhoto(0);
+
+  // Buy box
+  let qty = 1;
+  function renderInfo() {
+    const s = GN.sel[p.id], price = GN.priceOf(p);
+    const sizes = p.sizes && p.sizes.length > 1 ? `<p class="label">Size: ${s.size}</p><div class="opts">${p.sizes.map(([z, v], i) =>
+      `<button class="opt" data-id="${p.id}" data-size="${z}" aria-pressed="${z === s.size}">${z}<small>${i ? "Best value · family size" : "Handy jar"} · ${fmt(v)}</small></button>`).join("")}</div>`
+      : p.sizes ? `<p class="label">Size: ${p.sizes[0][0]}</p>` : "";
+    const choice = p.choice ? `<p class="label">${p.choice.label}: ${s.choice}</p><div class="opts">${p.choice.opts.map(o =>
+      `<button class="opt" data-id="${p.id}" data-choice="${o}" aria-pressed="${o === s.choice}">${o}</button>`).join("")}</div>` : "";
+    const inside = p.items ? `<p class="label">What's inside</p><ul class="contents" style="margin-bottom:16px">${p.items.map(([n, w]) => `<li><span>${n}</span><span>${w}</span></li>`).join("")}</ul>` : "";
+    const bundles = GN.bundlesWith(p.id);
+    const inBundles = bundles.length ? `<p class="in-bundles">Also in ${bundles.map(b =>
+      `<a href="${GN.url(b)}">${b.name}</a> <span>(save ${fmt(b.separate - b.price)})</span>`).join(" · ")}</p>` : "";
+    const was = p.separate ? `<span class="was">${fmt(p.separate)}</span><span class="save">Save ${fmt(p.separate - price)} (${GN.savePct(p)}%)</span>` : "";
+    document.getElementById("info").innerHTML = `
+      <div class="loved"><div class="faces">${["#d9a566", "#e8b04b", "#a2481f", "#f4ead9"].map((c, i) => `<span style="background:${c}">${"ASMH"[i]}</span>`).join("")}</div>
+        <div><b>Loved by 250+ families</b><small>${p.type === "bundles" ? "The easiest way to stock up." : "A breakfast-table favourite."}</small></div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${p.type === "bundles" ? `<span class="badge outline">Bundle</span>` : `<span class="badge outline">Nut butter</span>`}${p.badge ? `<span class="badge">${p.badge}</span>` : ""}</div>
+      <h1>${p.name}</h1>
+      <div class="rating"><a href="#reviews">Read what customers say ↓</a></div>
+      <p class="desc">${p.desc}</p>
+      ${inBundles}
+      <div class="big-price"><span class="price">${fmt(price)}</span>${was}</div>
+      <div class="online-box"><span class="gold" style="display:inline-flex;width:18px">${ico.heart}</span><span>Pay online for <b>${fmt(GN.onlineOf(p))}</b> — save an extra 10%</span></div>
+      ${inside}${choice}${sizes}
+      <div class="buy">
+        <div class="qty"><button aria-label="Decrease" onclick="setQty(-1)">−</button><span id="qty">${qty}</span><button aria-label="Increase" onclick="setQty(1)">+</button></div>
+        <button class="add" onclick="GN.add(p.id, qty, this)">${ico.bag} Add to cart</button>
+      </div>
+      <button class="buy-now" onclick="GN.add(p.id, qty); GN.openCart()">Buy it now</button>
+      <div class="stock">In stock, ready to ship</div>
+      <div class="feats panel">
+        <div><i>${ico.truck}</i><b>Free delivery</b><span>All over Pakistan</span></div>
+        <div><i>${ico.clock}</i><b>Karachi 24–48h</b><span>Other cities 4–6 days</span></div>
+        <div><i>${ico.flask}</i><b>Food-scientist made</b><span>20+ yrs in food safety</span></div>
+        <div><i>${ico.leaf}</i><b>Simple ingredients</b><span>Roasted nuts first</span></div>
+      </div>
+      ${GN.reviewHTML(GN.reviewsFor(p)[0])}`;
+  }
+  function setQty(d) { qty = Math.max(1, qty + d); document.getElementById("qty").textContent = qty; }
+  renderInfo();
+  document.addEventListener("gn:select", renderInfo);
+
+  // Choose your pack / other bundles
+  const isPB = p.type === "singles" && p.sizes.length > 1;
+  let pack;
+  if (p.type === "bundles") {
+    pack = GN.products.filter(x => x.type === "bundles" && x.id !== p.id);
+    document.getElementById("packTitle").textContent = "More Bundles";
+    document.getElementById("packSub").textContent = "Other boxes you might like.";
+  } else {
+    pack = [p, GN.byId(isPB ? "peanut-family-pack" : "almond-cashew-duo"), GN.byId("good-noura-collection")];
+  }
+  GN.mount(document.getElementById("pack"), () => pack);
+  document.getElementById("reviewList").innerHTML = GN.reviewsFor(p).map(GN.reviewHTML).join("");
+  document.getElementById("deliverySlot").innerHTML = GN.delivery();
+
+  document.getElementById("enjoy").innerHTML = [
+    [ico.toast, "Toast & parathas", "Spread thick, top with banana or a drizzle of honey."],
+    [ico.blender, "Smoothies & shakes", "A spoonful makes any shake richer and more filling."],
+    [ico.bowl, "Oats & bowls", "Swirl into oats, yoghurt or chia for a nutty finish."],
+    [ico.cake, "Desserts & baking", "Cookies, brownies and drizzles — or straight from the jar."],
+  ].map(([i, h, t]) => `<div class="tile">${i}<h4>${h}</h4><p>${t}</p></div>`).join("");
+  document.getElementById("proMove").innerHTML = p.type === "bundles"
+    ? `Want a different mix? <a href="make-your-own-bundle.html">Make your own bundle</a>.`
+    : `<b>Pro move:</b> get it in the <a href="${GN.url(GN.byId("good-noura-collection"))}">Good Noura Collection</a> and try every butter.`;
+
+  // Recipe banner (wide image in the photo brief)
+  const recipes = {
+    Chocolate: ["Choco-peanut banana toast", ["Toast a slice of bread", "Spread 2 tbsp chocolate peanut butter", "Top with banana slices", "Finish with a pinch of cinnamon"]],
+    Almond: ["Almond butter smoothie", ["1 banana and 1 cup milk", "1 tbsp almond butter", "A few dates or honey", "Blend with ice"]],
+    Cashew: ["Cashew butter overnight oats", ["½ cup oats + ½ cup milk", "1 tbsp cashew butter", "Top with fruit", "Leave in the fridge overnight"]],
+  };
+  const [rName, rSteps] = recipes[p.flavour] || ["Peanut butter with rice cakes", ["2 tbsp peanut butter", "2–3 brown rice cakes", "Spread evenly over each cake", "Top with apple, banana or berries"]];
+  document.getElementById("recipeName").textContent = rName;
+  document.getElementById("recipeSteps").innerHTML = rSteps.map(s => `<li>${s}</li>`).join("");
+  document.getElementById("recipeArt").innerHTML = `${GN.jar(p.lids[0] === "#efe4c8" || p.lids[0] === "#e7d3b1" ? "#8e3c19" : p.lids[0], 110)}
+    <span class="ph-tag"><b>Photo to shoot</b> · the recipe plated next to the jar (wide banner)</span>`;
+
+  document.getElementById("story").textContent = p.type === "bundles"
+    ? "Every jar in this box is made the same way: carefully picked nuts, roasted for a deep flavour and ground in small batches."
+    : `${p.desc} Made in small batches from carefully picked nuts.`;
+  document.getElementById("ingredients").textContent = p.type === "bundles"
+    ? "See each jar's page for its ingredients." : p.ingredients || "[Ingredients list — e.g. roasted peanuts, salt.]";
+  if (p.allergen) document.getElementById("allergen").textContent = p.allergen;
+
+  // Side column: size guide for peanut butter, otherwise what's inside / good to know
+  document.getElementById("sideCol").innerHTML = isPB
+    ? `<h2>Which Size Is Right?</h2>
+       <div class="panel size-card"><span class="w">340g</span><div><b>${fmt(p.sizes[0][1])} · Handy jar</b><p>For one or two people — and an easy way to try it.</p></div></div>
+       <div class="panel size-card" style="border-color:var(--gold)"><span class="w">510g</span><div><b>${fmt(p.sizes[1][1])} · Family size</b><p>Better value for families and daily spreaders.</p></div></div>`
+    : p.type === "bundles"
+    ? `<h2>Why Bundle?</h2>
+       <div class="panel size-card"><span class="w">${GN.savePct(p)}%</span><div><b>Saved vs. single jars</b><p>${fmt(p.separate)} if bought separately.</p></div></div>
+       <div class="panel size-card" style="border-color:var(--gold)"><span class="w">+10%</span><div><b>When you pay online</b><p>Pay ${fmt(p.onlinePrice)} instead of ${fmt(p.price)}.</p></div></div>`
+    : `<h2>Good to Know</h2>
+       <div class="panel size-card"><span class="w">210g</span><div><b>${fmt(p.sizes[0][1])} · Premium jar</b><p>Rich and concentrated — a little goes a long way.</p></div></div>
+       <div class="panel size-card" style="border-color:var(--gold)"><span class="w">Duo</span><div><b>Pair it and save</b><p>Get almond + cashew together in the <a class="gold" href="${GN.url(GN.byId("almond-cashew-duo"))}">Duo</a>.</p></div></div>`;
+
+  GN.mount(document.getElementById("pantry"), () => GN.products.filter(x => x.type === "singles" && x.id !== p.id).slice(0, 4));
+</script>
+</body>
+</html>

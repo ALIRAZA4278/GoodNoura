@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Make Your Own Bundle – Good Noura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+  .head { padding: 26px 0 8px; }
+  .head h1 { font-size: 44px; margin: 8px 0 8px; }
+  .head p { color: var(--muted); margin: 0; max-width: 620px; }
+  .stepper { display: flex; gap: 10px; margin: 22px 0 26px; flex-wrap: wrap; }
+  .stepper span { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); }
+  .stepper b { width: 22px; height: 22px; border-radius: 50%; background: var(--gold); color: var(--gold-ink); display: grid; place-items: center; font-size: 11px; }
+  .builder { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; align-items: start; }
+  .pick { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .jar-card { display: grid; grid-template-columns: 80px 1fr; gap: 12px; padding: 12px; align-items: center; }
+  .jar-card.on { border-color: var(--gold); }
+  .jar-card img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; background: var(--tile); }
+  .jar-card h3 { font-size: 16px; margin: 0 0 2px; }
+  .jar-card .meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .jar-card .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .jar-card .p { font: 600 17px var(--serif); color: var(--gold); white-space: nowrap; }
+  .jar-card .qty button { width: 30px; height: 30px; }
+  .jar-card .qty span { min-width: 22px; font-size: 13px; }
+  .summary { position: sticky; top: 96px; padding: 20px; }
+  .summary h2 { font-size: 24px; margin: 0 0 12px; }
+  .slots { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; min-height: 52px; }
+  .slots .s { width: 44px; height: 52px; border: 1px dashed var(--line); border-radius: 8px; display: grid; place-items: center; overflow: hidden; }
+  .slots .s.filled { border-style: solid; border-color: var(--gold); }
+  .slots .s svg { width: 32px; height: auto; }
+  .sum-lines { list-style: none; padding: 0; margin: 0 0 14px; font-size: 13px; display: grid; gap: 6px; }
+  .sum-lines li { display: flex; justify-content: space-between; gap: 10px; }
+  .sum-lines li span:last-child { color: var(--muted); white-space: nowrap; }
+  .sum-tot { border-top: 1px solid var(--line-soft); padding-top: 12px; }
+  .hint { font-size: 12px; color: var(--muted); margin: 10px 0 0; text-align: center; }
+  .add[disabled] { opacity: .45; cursor: not-allowed; }
+  .sugg { margin-top: 14px; font-size: 12.5px; padding: 12px; border-radius: 8px; background: rgba(232,176,75,.08); border: 1px solid rgba(232,176,75,.35); }
+  .sugg a { color: var(--gold); font-weight: 600; }
+  @media (max-width: 900px) {
+    .builder { grid-template-columns: 1fr; }
+    .summary { position: static; }
+  }
+  @media (max-width: 620px) {
+    .pick { grid-template-columns: 1fr; }
+    .head h1 { font-size: 34px; }
+  }
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+
+<main class="wrap">
+  <div class="crumbs"><a href="index.html">Home</a> › <b>Make Your Own Bundle</b></div>
+  <section class="head">
+    <span class="eyebrow">Your box, your way</span>
+    <h1>Make Your Own Bundle</h1>
+    <p>Mix any jars and sizes you like. Delivery is free all over Pakistan, and you save another 10% when you pay online.</p>
+  </section>
+  <div class="stepper"><span><b>1</b>Pick your jars</span><span><b>2</b>Check your box</span><span><b>3</b>Add to cart</span></div>
+
+  <div class="builder">
+    <div class="pick" id="pick"></div>
+    <aside class="summary panel" id="summary"></aside>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="site.js"></script>
+<script>
+  GN.init("Make your own bundle");
+  const { fmt } = GN;
+  const MIN = 2;
+  // One option per jar + size
+  const options = GN.products.filter(p => p.type === "singles").flatMap(p =>
+    p.sizes.map(([size, price]) => ({ key: `${p.id}|${size}`, p, size, price, qty: 0 })));
+
+  function render() {
+    document.getElementById("pick").innerHTML = options.map((o, i) => `
+      <div class="jar-card panel${o.qty ? " on" : ""}">
+        <img src="${o.p.img}" alt="${o.p.name}">
+        <div><h3>${o.p.name}</h3><div class="meta">${o.size} · ${o.p.sub}</div>
+          <div class="row"><span class="p">${fmt(o.price)}</span>
+            <div class="qty"><button data-i="${i}" data-d="-1" aria-label="Remove one">−</button><span>${o.qty}</span><button data-i="${i}" data-d="1" aria-label="Add one">+</button></div></div></div>
+      </div>`).join("");
+
+    const chosen = options.filter(o => o.qty);
+    const count = chosen.reduce((n, o) => n + o.qty, 0);
+    const total = chosen.reduce((n, o) => n + o.qty * o.price, 0);
+    const jars = chosen.flatMap(o => Array(o.qty).fill(o.p.lids[0]));
+    const slots = Math.max(MIN, jars.length + 1);
+    document.getElementById("summary").innerHTML = `
+      <h2>Your bundle</h2>
+      <div class="slots">${Array.from({ length: Math.min(slots, 12) }, (_, i) =>
+        `<span class="s${jars[i] ? " filled" : ""}">${jars[i] ? GN.jar(jars[i], 32) : ""}</span>`).join("")}</div>
+      ${count ? `<ul class="sum-lines">${chosen.map(o => `<li><span>${o.qty} × ${o.p.name} ${o.size}</span><span>${fmt(o.qty * o.price)}</span></li>`).join("")}</ul>` : `<p class="muted" style="font-size:13px">Add at least ${MIN} jars to build your bundle.</p>`}
+      <div class="sum-tot">
+        <div class="tot"><span>Total (cash on delivery)</span><span>${fmt(total)}</span></div>
+        <div class="tot sm"><span>Pay online</span><b>${fmt(GN.online(total))}</b></div>
+        <p class="ship"><b>Free delivery</b> all over Pakistan</p>
+      </div>
+      <button class="add" id="addBundle" ${count < MIN ? "disabled" : ""}>${GN.ico.bag} Add ${count || ""} jar${count === 1 ? "" : "s"} to cart</button>
+      <p class="hint">${count < MIN ? `${MIN - count} more to go` : "Looking good!"}</p>
+      ${suggestion(chosen)}`;
+  }
+
+  // Point shoppers to a ready-made bundle when their mix matches one and it's cheaper
+  function suggestion(chosen) {
+    const has = id => chosen.some(o => o.p.id === id);
+    if (has("almond-butter") && has("cashew-butter")) {
+      const b = GN.byId(has("creamy-peanut-butter") || has("crunchy-peanut-butter") || has("chocolate-peanut-butter") ? "good-noura-collection" : "almond-cashew-duo");
+      return `<div class="sugg">Tip: the <a href="${GN.url(b)}">${b.name}</a> has these jars for ${fmt(b.price)} — save ${fmt(b.separate - b.price)}.</div>`;
+    }
+    if (["creamy", "crunchy", "chocolate"].every(f => chosen.some(o => o.p.id === `${f}-peanut-butter` && o.size === "510g"))) {
+      const b = GN.byId("peanut-family-pack");
+      return `<div class="sugg">Tip: the <a href="${GN.url(b)}">${b.name}</a> has all three 510g jars for ${fmt(b.price)} — save ${fmt(b.separate - b.price)}.</div>`;
+    }
+    return "";
+  }
+
+  document.querySelector("main").addEventListener("click", e => {
+    const b = e.target.closest("[data-i]");
+    if (b) { const o = options[b.dataset.i]; o.qty = Math.max(0, o.qty + +b.dataset.d); render(); return; }
+    if (e.target.closest("#addBundle")) {
+      options.filter(o => o.qty).forEach(o => GN.addLine({ key: o.key, name: o.p.name, img: o.p.img, variant: o.size,
+        price: o.price, onlinePrice: GN.online(o.price) }, o.qty));
+      options.forEach(o => o.qty = 0);
+      render(); GN.openCart();
+    }
+  });
+  render();
+</script>
+</body>
+</html>

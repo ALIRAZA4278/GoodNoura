@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact – Good Noura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+  .head { padding: 26px 0 26px; text-align: center; }
+  .head h1 { font-size: 44px; margin: 8px 0 8px; }
+  .head p { color: var(--muted); margin: 0; }
+  .ways { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .way { padding: 22px; text-decoration: none; display: block; transition: border-color .15s; }
+  .way:hover { border-color: var(--gold); }
+  .way i { width: 44px; height: 44px; border-radius: 50%; background: var(--gold); color: var(--gold-ink); display: grid; place-items: center; margin-bottom: 12px; }
+  .way i svg { width: 20px; height: 20px; }
+  .way b { display: block; font-size: 15px; margin-bottom: 2px; }
+  .way span { color: var(--muted); font-size: 13px; }
+  .way em { display: block; font-style: normal; color: var(--gold); font-weight: 600; margin-top: 8px; font-size: 13.5px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  .two h2 { font-size: 28px; margin: 0 0 14px; }
+  form { padding: 22px; display: grid; gap: 14px; }
+  label { font-size: 12.5px; font-weight: 600; display: grid; gap: 6px; }
+  input, textarea, select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font: inherit; padding: 11px 12px; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--gold); }
+  textarea { min-height: 120px; resize: vertical; }
+  .form-note { font-size: 12px; color: var(--muted); margin: 0; }
+  @media (max-width: 820px) {
+    .ways { grid-template-columns: 1fr; }
+    .two { grid-template-columns: 1fr; }
+    .head h1 { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+
+<main class="wrap">
+  <div class="crumbs"><a href="index.html">Home</a> › <b>Contact</b></div>
+  <section class="head">
+    <span class="eyebrow">We're here to help</span>
+    <h1>Contact Us</h1>
+    <p>Questions about an order, a flavour or a bulk gift? Message us — we usually reply the same day.</p>
+  </section>
+
+  <section class="ways" id="ways"></section>
+
+  <section class="section two">
+    <div>
+      <h2>Send us a message</h2>
+      <form class="panel" id="form">
+        <label>Your name<input name="name" required autocomplete="name"></label>
+        <label>Phone number<input name="phone" type="tel" autocomplete="tel" placeholder="03xx xxxxxxx"></label>
+        <label>What's it about?
+          <select name="topic"><option>An order I placed</option><option>Products &amp; flavours</option><option>Bulk / gift orders</option><option>Something else</option></select></label>
+        <label>Message<textarea name="message" required></textarea></label>
+        <button class="btn btn-gold" type="submit">Send on WhatsApp</button>
+        <p class="form-note">Opens WhatsApp with your message ready to send.</p>
+      </form>
+    </div>
+    <div>
+      <h2>Quick answers</h2>
+      <div class="acc">
+        <details open><summary>How much is delivery?</summary><p>Delivery is free on every order, all over Pakistan.</p></details>
+        <details><summary>How long does delivery take?</summary><p>Karachi: 24–48 hours. Other cities: 4–6 business days.</p></details>
+        <details><summary>How can I pay?</summary><p>Cash on delivery, or pay online and save an extra 10% on your order.</p></details>
+        <details><summary>Can I mix my own bundle?</summary><p>Yes — pick any jars and sizes on the <a class="gold" href="make-your-own-bundle.html">Make Your Own Bundle</a> page.</p></details>
+        <details><summary>How should I store my nut butter?</summary><p>Keep it in a cool, dry place out of direct sunlight and use a clean, dry spoon. Best enjoyed within 30 days of opening. A little oil on top is natural — just stir.</p></details>
+        <details><summary>Do you do bulk or corporate gift orders?</summary><p>[Your bulk / gifting policy.] Message us on WhatsApp and we'll help.</p></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+<script src="site.js"></script>
+<script>
+  GN.init("Contact");
+  const { ico } = GN;
+  document.getElementById("ways").innerHTML = [
+    [GN.WHATSAPP, ico.chat, "WhatsApp", "Fastest way to reach us", GN.PHONE],
+    ["tel:03394888776", ico.phone, "Call us", "[Hours — e.g. Mon–Sat, 10am–7pm]", GN.PHONE],
+    [`mailto:${GN.EMAIL}`, ico.mail, "Email", "For orders and partnerships", GN.EMAIL],
+  ].map(([h, i, b, s, v]) => `<a class="way panel" href="${h}"><i>${i}</i><b>${b}</b><span>${s}</span><em>${v}</em></a>`).join("");
+
+  document.getElementById("form").addEventListener("submit", e => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const text = `Hi Good Noura, I'm ${f.get("name")}${f.get("phone") ? ` (${f.get("phone")})` : ""}.\nTopic: ${f.get("topic")}\n\n${f.get("message")}`;
+    window.open(`${GN.WHATSAPP}?text=${encodeURIComponent(text)}`, "_blank");
+  });
+</script>
+</body>
+</html>
