@@ -115,6 +115,8 @@ header.site .wrap { display: grid; grid-template-columns: 1fr auto 1fr; align-it
 .add svg { width: 16px; height: 16px; flex: none; }
 .add:hover { background: #f0bd5c; }
 .add.added { background: var(--green); }
+.add:disabled { opacity: .45; cursor: not-allowed; }
+a.add { text-decoration: none; }
 /* Compact cards (bundle suggestions under a product) */
 .grid.compact { grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .grid.compact .card { flex-direction: row; align-items: center; gap: 12px; }

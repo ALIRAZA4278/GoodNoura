@@ -1,75 +1,21 @@
-// Good Noura — shared data, header/footer, product cards and cart for every page.
-// Prices come from Good_Noura_Pricing.xlsx (Revised Prices + Bundles tabs). Pay online = 10% off.
+// Good Noura — header/footer, product cards and cart for every page.
+// Products, reviews and contact details come from catalog.js (live from the database when server.js runs). Pay online = 10% off.
 const GN = (() => {
   const PREPAID = 0.10;
-  const PHONE = "0339 4888776";
-  const WHATSAPP = "https://wa.me/923394888776";
-  const EMAIL = "Goodnoura6@gmail.com";
-  const IMG = f => `https://goodnoura.com/cdn/shop/files/${f}&width=800`;
+  const CAT = window.GN_CATALOG;
+  const S = CAT.settings;
+  const PHONE = S.phone;
+  const TEL = "tel:" + S.phone.replace(/D/g, "");
+  const WHATSAPP = "https://wa.me/" + S.whatsapp;
+  const EMAIL = S.email;
   const fmt = n => "Rs " + n.toLocaleString("en-US");
   const online = n => Math.round(n * (1 - PREPAID));
 
-  const products = [
-    // Bundles
-    { id: "good-noura-collection", type: "bundles", name: "The Good Noura Collection", featured: true, ribbon: "Most complete",
-      sub: "One of every butter — the full Good Noura experience.",
-      desc: "Almond, cashew and your favourite peanut butter in one box. The easiest way to try everything we make — or to gift it.",
-      img: IMG("9.png?v=1793342684"), color: "#c9923f", lids: ["#e7d3b1", "#efe4c8", "#b7773d"],
-      price: 6499, onlinePrice: 5849, separate: 7297,
-      items: [["Almond Butter", "210g"], ["Cashew Butter", "210g"], ["Peanut Butter (your pick)", "510g"]],
-      choice: { label: "Choose your peanut butter", opts: ["Creamy", "Crunchy", "Chocolate"] } },
-    { id: "peanut-family-pack", type: "bundles", name: "Peanut Family Pack", badge: "Best seller",
-      sub: "All three peanut butters in the big family jar.",
-      desc: "Creamy, crunchy and chocolate — three 510g jars so everyone at home gets their favourite.",
-      img: IMG("10.png?v=1793342723"), color: "#b7773d", lids: ["#d9a566", "#b7773d", "#5a3220"],
-      price: 4599, onlinePrice: 4139, separate: 5097,
-      items: [["Peanut Butter, Creamy", "510g"], ["Peanut Butter, Crunchy", "510g"], ["Peanut Butter, Chocolate", "510g"]] },
-    { id: "almond-cashew-duo", type: "bundles", name: "Almond + Cashew Duo", badge: "Premium",
-      sub: "Our two premium nut butters, side by side.",
-      desc: "Silky almond butter and rich cashew butter. A premium pair for breakfast bowls, smoothies and baking.",
-      img: IMG("7_2407298a-658f-4847-baa0-c2909dd6fe77.png?v=1793342598"), color: "#d8bf94", lids: ["#e7d3b1", "#efe4c8"],
-      price: 4999, onlinePrice: 4499, separate: 5598,
-      items: [["Almond Butter", "210g"], ["Cashew Butter", "210g"]] },
-    // Single jars
-    { id: "creamy-peanut-butter", type: "singles", name: "Peanut Butter, Creamy", flavour: "Creamy", sub: "Smooth, everyday spread.",
-      desc: "Slow-roasted peanuts ground until silky smooth. Made for toast, parathas, apples and a spoon straight from the jar.",
-      img: IMG("1_5abb56eb-77a4-4250-9613-587657da051a.png?v=1791733226"), color: "#d9a566", lids: ["#d9a566"],
-      sizes: [["340g", 1349], ["510g", 1699]] },
-    { id: "crunchy-peanut-butter", type: "singles", name: "Peanut Butter, Crunchy", flavour: "Crunchy", sub: "Real roasted peanut bits.",
-      desc: "All the smoothness, with real roasted peanut pieces in every spoon. For people who like a bit of bite.",
-      img: IMG("1_4eaec112-bbe3-426d-bda4-8c2e80568356.png?v=1791734896"), color: "#b7773d", lids: ["#b7773d"],
-      sizes: [["340g", 1349], ["510g", 1699]] },
-    { id: "chocolate-peanut-butter", type: "singles", name: "Peanut Butter, Chocolate", flavour: "Chocolate", sub: "Peanut butter meets cocoa.",
-      desc: "Our peanut butter blended with cocoa. A dessert-worthy spread you can still have at breakfast.",
-      img: IMG("1_c5d4d60c-ee6d-4963-a580-91d7075cdb87.png?v=1791735330"), color: "#5a3220", lids: ["#5a3220"],
-      sizes: [["340g", 1349], ["510g", 1699]] },
-    { id: "almond-butter", type: "singles", name: "Almond Butter", flavour: "Almond", sub: "Pure roasted almonds.",
-      desc: "Roasted almonds ground into a smooth, mild butter. Lovely in smoothies, oats and on fruit.",
-      img: "img/almond-1-main.webp", color: "#e7d3b1", lids: ["#e7d3b1"],
-      gallery: [["Main photo", "img/almond-1-main.webp"], ["Flavour", "img/almond-2-flavour.webp"], ["Benefits", "img/almond-3-benefits.png"],
-        ["How to use", "img/almond-4-uses.webp"], ["Nutrition", "img/almond-5-nutrition.png"]],
-      ingredients: "100% roasted almonds. No additives, no preservatives.", allergen: "Contains tree nuts (almonds).",
-      sizes: [["210g", 2799]] },
-    { id: "cashew-butter", type: "singles", name: "Cashew Butter", flavour: "Cashew", sub: "Rich, creamy cashews.",
-      desc: "Naturally sweet and creamy. Spread it, drizzle it, or stir it into curries and desserts.",
-      img: IMG("1_ee49cee9-47ff-4176-b330-8d4a99a4417b.png?v=1791735966"), color: "#efe4c8", lids: ["#efe4c8"],
-      sizes: [["210g", 2799]] },
-  ];
-  // Which jars each bundle contains (Collection lets the shopper pick any peanut butter)
-  const PB = ["creamy-peanut-butter", "crunchy-peanut-butter", "chocolate-peanut-butter"];
-  const contains = {
-    "good-noura-collection": ["almond-butter", "cashew-butter", ...PB],
-    "peanut-family-pack": PB,
-    "almond-cashew-duo": ["almond-butter", "cashew-butter"],
-  };
-
-  // Customer reviews as published on goodnoura.com
-  const reviews = [
-    { name: "Ayesha Khan", city: "Lahore", product: "creamy-peanut-butter", text: "The creamy peanut butter is so smooth and delicious. It goes perfectly with my morning toast, and the packaging looks beautiful too!" },
-    { name: "Hassan Raza", city: "Karachi", product: "crunchy-peanut-butter", text: "Really enjoyed the crunchy peanut butter. Great texture, rich peanut flavor, and something I would happily order again." },
-    { name: "Zainab Malik", city: "Rawalpindi", product: "chocolate-peanut-butter", text: "A delicious chocolatey treat with my pancakes. I love how indulgent it feels." },
-    { name: "Bilal Siddiqui", city: "Lahore", product: "almond-butter", text: "The almond butter is lovely on toast and in my breakfast oats. The presentation is beautiful." },
-  ];
+  const products = CAT.products;
+  const reviews = CAT.reviews;
+  // Which jars each bundle contains (set per bundle in the admin)
+  const contains = Object.fromEntries(products.filter(p => p.contains).map(p => [p.id, p.contains]));
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
   const byId = id => products.find(p => p.id === id);
   const bundlesWith = id => products.filter(b => contains[b.id] && contains[b.id].includes(id));
@@ -78,8 +24,8 @@ const GN = (() => {
     const ids = contains[p.id] || [p.id];
     return [...reviews.filter(r => ids.includes(r.product)), ...reviews.filter(r => !ids.includes(r.product))];
   };
-  const reviewHTML = r => `<div class="review"><span class="avatar">${r.name.split(" ").map(w => w[0]).join("")}</span>
-    <div><b>${r.name}</b><p>“${r.text}”</p><span class="review-meta">${r.city} · ${byId(r.product).name}</span></div></div>`;
+  const reviewHTML = r => `<div class="review"><span class="avatar">${esc(r.name.split(" ").map(w => w[0]).join("").slice(0, 2))}</span>
+    <div><b>${esc(r.name)}</b><p>“${esc(r.text)}”</p><span class="review-meta">${[r.city, (byId(r.product) || {}).name].filter(Boolean).map(esc).join(" · ")}</span></div></div>`;
   const url = p => `product.html?p=${p.id}`;
 
   // Selected size / peanut-butter choice per product, shared by every card on the page
@@ -167,7 +113,7 @@ const GN = (() => {
         </div>
         <a class="logo" href="index.html"><img src="https://goodnoura.com/cdn/shop/files/fav_icon_circle.png?v=1789566538&width=120" alt=""><span>GOOD NOURA</span></a>
         <div class="tools">
-          <a class="phone" href="tel:03394888776">${PHONE}</a>
+          <a class="phone" href="${TEL}">${PHONE}</a>
           <a class="icon-btn hide-sm" aria-label="WhatsApp" href="${WHATSAPP}">${ico.chat}</a>
           <button class="icon-btn" aria-label="Cart" onclick="GN.openCart()">${ico.bag}<span class="cart-count" id="cartCount">0</span></button>
         </div></div></header>`;
@@ -180,7 +126,7 @@ const GN = (() => {
           <li><a href="our-story.html">Our Story</a></li><li><a href="contact.html">Contact Us</a></li>
           <li><a href="https://goodnoura.com/pages/privacy-policy">Privacy Policy</a></li><li><a href="https://goodnoura.com/pages/terms-and-conditions">Terms and Conditions</a></li></ul></div>
         <div><h4>Contact us</h4><ul>
-          <li>Phone / WhatsApp: <a href="tel:03394888776">${PHONE}</a></li>
+          <li>Phone / WhatsApp: <a href="${TEL}">${PHONE}</a></li>
           <li>Email: <a href="mailto:${EMAIL}">${EMAIL}</a></li>
           <li><a href="https://www.facebook.com/Goodnoura">Facebook</a> &nbsp; <a href="https://www.instagram.com/good.noura">Instagram</a></li></ul></div>
       </div><div class="copy">© 2026 Good Noura</div></div></footer>
@@ -218,7 +164,7 @@ const GN = (() => {
         <div class="price-row"><span class="price">${fmt(price)}</span>${was}</div>
         <p class="online"><b>${fmt(onlineOf(p))}</b> when you pay online</p>
         <div class="card-actions">
-          <button class="add sm" data-add="${p.id}">${ico.bag} Add to cart</button>
+          ${p.inStock === false ? `<button class="add sm" disabled>Sold out</button>` : `<button class="add sm" data-add="${p.id}">${ico.bag} Add to cart</button>`}
           <a class="shop-now" href="${url(p)}">Shop now</a>
         </div>
       </div></article>`;
@@ -240,7 +186,9 @@ const GN = (() => {
     save(); renderCart();
   }
   function add(id, qty = 1, btn) {
-    const p = byId(id), variant = variantOf(p);
+    const p = byId(id);
+    if (!p || p.inStock === false) return;
+    const variant = variantOf(p);
     addLine({ key: id + "|" + variant, name: p.name, img: p.img, variant, price: priceOf(p), onlinePrice: onlineOf(p) }, qty);
     if (btn && !btn.closest(".drawer")) {
       const html = btn.innerHTML;
@@ -256,7 +204,8 @@ const GN = (() => {
     const score = p => {
       if (inCart.has(p.id)) return -1;
       let s = 0;
-      if (p.type === "bundles") s += contains[p.id].filter(id => inCart.has(id)).length * 3 + 1;
+      if (p.inStock === false) return -1;
+      if (p.type === "bundles") s += (contains[p.id] || []).filter(id => inCart.has(id)).length * 3 + 1;
       else s += bundlesWith(p.id).some(b => inCart.has(b.id)) ? 0 : 2;
       return s;
     };
@@ -290,10 +239,11 @@ const GN = (() => {
       <p class="ship"><b>Free delivery</b> all over Pakistan</p>
       <div class="tot"><span>Total (cash on delivery)</span><span>${fmt(total)}</span></div>
       <div class="tot sm"><span>Pay online</span><b>${fmt(totalOnline)}</b></div>
-      <button class="add">Check out</button>` : "";
+      <a class="add" href="checkout.html">Check out</a>` : "";
   }
   const openCart = () => document.body.classList.add("cart-open");
   const closeCart = () => document.body.classList.remove("cart-open");
+  const clearCart = () => { cart = []; save(); renderCart(); };
 
   function init(active) {
     document.getElementById("site-header").outerHTML = header(active);
@@ -316,5 +266,5 @@ const GN = (() => {
   }
 
   return { products, byId, url, reviews, reviewsFor, reviewHTML, bundlesWith, sel, priceOf, onlineOf, savePct, fmt, online, ico, jar, photos, delivery, card, mount, rerender,
-    add, addLine, openCart, closeCart, init, PHONE, WHATSAPP, EMAIL };
+    add, addLine, openCart, closeCart, clearCart, cart: () => cart, esc, init, settings: S, PHONE, WHATSAPP, EMAIL };
 })();

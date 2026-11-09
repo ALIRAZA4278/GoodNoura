@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkout – Good Noura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+  .co { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; align-items: start; padding: 10px 0 60px; }
+  .co h1 { font-size: 40px; margin: 6px 0 18px; }
+  .co h2 { font-size: 20px; margin: 22px 0 10px; }
+  .co form { display: grid; gap: 4px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  label { font-size: 12.5px; font-weight: 600; display: grid; gap: 6px; margin-bottom: 10px; }
+  label small { font-weight: 400; color: var(--muted); }
+  input, textarea { background: var(--card); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font: inherit; padding: 11px 12px; }
+  input:focus, textarea:focus { outline: none; border-color: var(--gold); }
+  textarea { min-height: 70px; resize: vertical; }
+  .pay { display: grid; gap: 10px; }
+  .pay label { display: flex; align-items: flex-start; gap: 12px; margin: 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); cursor: pointer; font-weight: 500; }
+  .pay label:has(input:checked) { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+  .pay input { margin-top: 3px; accent-color: var(--gold); }
+  .pay b { display: block; font-size: 14px; }
+  .pay span { font-size: 12.5px; color: var(--muted); }
+  .pay .save-tag { color: var(--green); font-weight: 700; }
+  .summary { position: sticky; top: 96px; padding: 20px; }
+  .summary h2 { margin-top: 0; }
+  .sline { display: grid; grid-template-columns: 54px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
+  .sline img { width: 54px; height: 54px; border-radius: 8px; object-fit: cover; background: var(--tile); }
+  .sline .v { color: var(--muted); font-size: 12px; }
+  .promo-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin: 14px 0 6px; }
+  .promo-row button { background: transparent; border: 1px solid var(--gold); color: var(--cream); border-radius: 8px; padding: 0 16px; font-weight: 700; }
+  .promo-msg { font-size: 12px; min-height: 16px; margin: 0 0 8px; }
+  .promo-msg.ok { color: var(--green); } .promo-msg.err { color: #e88a6b; }
+  .tline { display: flex; justify-content: space-between; font-size: 13.5px; padding: 4px 0; }
+  .tline.big { font: 600 22px var(--serif); border-top: 1px solid var(--line); margin-top: 8px; padding-top: 12px; }
+  .tline .free { color: var(--green); font-weight: 600; }
+  .place { margin-top: 16px; height: 50px; font-size: 15px; }
+  .err-box { background: rgba(232,138,107,.1); border: 1px solid rgba(232,138,107,.5); color: #f3b9a5; border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-top: 12px; }
+  .done { max-width: 620px; margin: 40px auto 80px; text-align: center; padding: 34px 28px; }
+  .done .tick { width: 64px; height: 64px; border-radius: 50%; background: var(--green); color: #14301a; display: grid; place-items: center; margin: 0 auto 14px; font-size: 32px; font-weight: 700; }
+  .done h1 { font-size: 36px; margin: 0 0 8px; }
+  .done .bank { text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 18px 0; font-size: 13.5px; }
+  .done .bank div { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+  .done .bank span { color: var(--muted); }
+  .empty-co { text-align: center; padding: 60px 0 90px; }
+  @media (max-width: 900px) { .co { grid-template-columns: 1fr; } .summary { position: static; order: -1; } }
+  @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; gap: 0; } .co h1 { font-size: 32px; } }
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<main class="wrap" id="main"></main>
+<div id="site-footer"></div>
+<script src="catalog.js"></script>
+<script src="site.js"></script>
+<script>
+  GN.init("");
+  const { fmt, esc } = GN;
+  const main = document.getElementById("main");
+  let promo = null;   // { code, pct }
+  let token;
+  try { token = localStorage.getItem("gn-cart-token"); if (!token) { token = crypto.randomUUID(); localStorage.setItem("gn-cart-token", token); } } catch (e) { token = crypto.randomUUID(); }
+
+  const payment = () => (document.querySelector("input[name=payment]:checked") || {}).value || "cod";
+  function totals() {
+    const pay = payment(), lines = GN.cart();
+    const subtotal = lines.reduce((n, l) => n + l.qty * (pay === "online" ? l.onlinePrice : l.price), 0);
+    const discount = promo ? Math.round(subtotal * promo.pct / 100) : 0;
+    return { subtotal, discount, total: subtotal - discount, codTotal: lines.reduce((n, l) => n + l.qty * l.price, 0) };
+  }
+
+  function render() {
+    const lines = GN.cart();
+    if (!lines.length) {
+      main.innerHTML = `<div class="empty-co"><h1 style="font-size:36px">Your cart is empty</h1><p class="muted">Pick a jar or a bundle to get started.</p>
+        <a class="btn btn-gold" href="bundles.html">Shop now</a></div>`;
+      return;
+    }
+    main.innerHTML = `
+      <div class="crumbs"><a href="index.html">Home</a> › <b>Checkout</b></div>
+      <div class="co">
+        <form id="form" novalidate>
+          <h1>Checkout</h1>
+          <h2>Your details</h2>
+          <label>Full name<input name="name" required autocomplete="name"></label>
+          <div class="row2">
+            <label>WhatsApp number<input name="phone" type="tel" required autocomplete="tel" placeholder="03xx xxxxxxx"></label>
+            <label>Email <small>(optional)</small><input name="email" type="email" autocomplete="email"></label>
+          </div>
+          <h2>Delivery address</h2>
+          <label>Address<textarea name="address" required autocomplete="street-address" placeholder="House, street, area"></textarea></label>
+          <label>City<input name="city" required autocomplete="address-level2"></label>
+          <h2>Payment</h2>
+          <div class="pay">
+            <label><input type="radio" name="payment" value="cod" checked><div><b>Cash on delivery</b><span>Pay when your order arrives.</span></div></label>
+            <label><input type="radio" name="payment" value="online"><div><b>Pay online (bank transfer) <span class="save-tag">— save 10%</span></b>
+              <span>We'll show the account details after you place your order.</span></div></label>
+          </div>
+          <div id="formErr"></div>
+          <button class="add place" type="submit" id="placeBtn">Place order</button>
+          <p class="muted" style="font-size:12px;text-align:center;margin-top:8px">Free delivery all over Pakistan · Karachi 24–48 hrs, other cities 4–6 days</p>
+        </form>
+        <aside class="summary panel">
+          <h2>Order summary</h2>
+          <div id="sumLines"></div>
+          <div class="promo-row"><input id="promoInput" placeholder="Promo code" aria-label="Promo code" autocomplete="off"><button type="button" id="promoBtn">Apply</button></div>
+          <p class="promo-msg" id="promoMsg"></p>
+          <div id="sumTotals"></div>
+        </aside>
+      </div>`;
+    renderSummary();
+    const form = document.getElementById("form");
+    form.addEventListener("change", renderSummary);
+    form.addEventListener("input", saveCartSoon);
+    form.addEventListener("submit", placeOrder);
+    document.getElementById("promoBtn").addEventListener("click", applyPromo);
+    document.getElementById("promoInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } });
+  }
+
+  function renderSummary() {
+    const pay = payment(), t = totals();
+    document.getElementById("sumLines").innerHTML = GN.cart().map(l => `
+      <div class="sline"><img src="${esc(l.img)}" alt=""><div><b>${l.qty} × ${esc(l.name)}</b><div class="v">${esc(l.variant || "")}</div></div>
+        <b>${fmt(l.qty * (pay === "online" ? l.onlinePrice : l.price))}</b></div>`).join("");
+    document.getElementById("sumTotals").innerHTML = `
+      <div class="tline"><span>Subtotal${pay === "online" ? " (online price)" : ""}</span><span>${fmt(t.subtotal)}</span></div>
+      ${pay === "online" ? `<div class="tline"><span>You save by paying online</span><span class="free">− ${fmt(t.codTotal - t.subtotal)}</span></div>` : ""}
+      ${promo ? `<div class="tline"><span>Promo ${esc(promo.code)} (${promo.pct}%)</span><span class="free">− ${fmt(t.discount)}</span></div>` : ""}
+      <div class="tline"><span>Delivery</span><span class="free">Free</span></div>
+      <div class="tline big"><span>Total</span><span>${fmt(t.total)}</span></div>`;
+  }
+
+  async function applyPromo() {
+    const code = document.getElementById("promoInput").value.trim(), msg = document.getElementById("promoMsg");
+    if (!code) { promo = null; msg.textContent = ""; renderSummary(); return; }
+    try {
+      const r = await fetch("/api/promo?code=" + encodeURIComponent(code));
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      promo = d; msg.className = "promo-msg ok"; msg.textContent = `${d.code} applied — ${d.pct}% off.`;
+    } catch (e) { promo = null; msg.className = "promo-msg err"; msg.textContent = e.message || "Couldn't check that code."; }
+    renderSummary();
+  }
+
+  // Save the cart with contact details so it shows under Abandoned carts in the admin
+  let saveTimer;
+  function saveCartSoon() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      const f = new FormData(document.getElementById("form"));
+      if (String(f.get("phone")).replace(/\D/g, "").length < 10 && !String(f.get("email")).includes("@")) return;
+      fetch("/api/carts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, name: f.get("name"), phone: f.get("phone"),
+        email: f.get("email"), city: f.get("city"), items: GN.cart().map(l => ({ key: l.key, qty: l.qty })) }) }).catch(() => {});
+    }, 1500);
+  }
+
+  async function placeOrder(e) {
+    e.preventDefault();
+    const form = e.target, f = new FormData(form), err = document.getElementById("formErr"), btn = document.getElementById("placeBtn");
+    err.innerHTML = "";
+    const missing = ["name", "phone", "address", "city"].filter(k => !String(f.get(k)).trim());
+    if (missing.length) { err.innerHTML = `<div class="err-box">Please fill in your ${missing.map(k => k === "phone" ? "WhatsApp number" : k).join(", ")}.</div>`; return; }
+    btn.disabled = true; btn.textContent = "Placing your order…";
+    clearTimeout(saveTimer);
+    try {
+      const r = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        name: f.get("name"), phone: f.get("phone"), email: f.get("email"), address: f.get("address"), city: f.get("city"),
+        payment: payment(), promo: promo ? promo.code : "", cartToken: token, items: GN.cart().map(l => ({ key: l.key, qty: l.qty })) }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || "We couldn't place your order.");
+      GN.clearCart();
+      try { localStorage.removeItem("gn-cart-token"); } catch (x) {}
+      thankYou(d, f.get("name"));
+    } catch (x) {
+      err.innerHTML = `<div class="err-box">${esc(x.message === "Failed to fetch" ? "We couldn't reach the shop." : x.message)} You can also order on <a class="gold" href="${GN.WHATSAPP}">WhatsApp</a>.</div>`;
+      btn.disabled = false; btn.textContent = "Place order";
+    }
+  }
+
+  function thankYou(d, name) {
+    const b = d.bank, has = b && (b.accountNumber || b.iban);
+    const wa = `${GN.WHATSAPP}?text=${encodeURIComponent(`Hi Good Noura, I've placed order ${d.id} (${fmt(d.total)}).`)}`;
+    main.innerHTML = `<div class="done panel">
+      <div class="tick">✓</div>
+      <h1>Thank you, ${esc(String(name).split(" ")[0])}!</h1>
+      <p class="muted">Your order <b class="gold">${esc(d.id)}</b> is placed. Total: <b>${fmt(d.total)}</b>.<br>
+        We'll message you on WhatsApp to confirm it.</p>
+      ${d.payment === "online" ? `<div class="bank"><b style="display:block;margin-bottom:6px">Pay by bank transfer</b>
+        ${has ? [["Bank", b.bankName], ["Account title", b.accountTitle], ["Account number", b.accountNumber], ["IBAN", b.iban]].filter(x => x[1])
+          .map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join("") : `<div><span>We'll send you the account details on WhatsApp.</span></div>`}
+        <div><span>Amount</span><b>${fmt(d.total)}</b></div>
+        ${b.payNote ? `<p class="muted" style="margin:8px 0 0;font-size:12.5px">${esc(b.payNote)}</p>` : ""}</div>` : `<p class="muted">Please keep <b>${fmt(d.total)}</b> ready for the rider.</p>`}
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+        <a class="btn btn-gold" href="${wa}">Message us on WhatsApp</a><a class="btn btn-line" href="index.html">Back to the shop</a></div></div>`;
+  }
+
+  render();
+</script>
+</body>
+</html>

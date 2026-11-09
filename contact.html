@@ -76,13 +76,14 @@
 </main>
 
 <div id="site-footer"></div>
+<script src="catalog.js"></script>
 <script src="site.js"></script>
 <script>
   GN.init("Contact");
   const { ico } = GN;
   document.getElementById("ways").innerHTML = [
     [GN.WHATSAPP, ico.chat, "WhatsApp", "Fastest way to reach us", GN.PHONE],
-    ["tel:03394888776", ico.phone, "Call us", "[Hours — e.g. Mon–Sat, 10am–7pm]", GN.PHONE],
+    ["tel:" + GN.PHONE.replace(/D/g, ""), ico.phone, "Call us", "[Hours — e.g. Mon–Sat, 10am–7pm]", GN.PHONE],
     [`mailto:${GN.EMAIL}`, ico.mail, "Email", "For orders and partnerships", GN.EMAIL],
   ].map(([h, i, b, s, v]) => `<a class="way panel" href="${h}"><i>${i}</i><b>${b}</b><span>${s}</span><em>${v}</em></a>`).join("");
 

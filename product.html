@@ -36,6 +36,17 @@
   .in-bundles { font-size: 12px; color: var(--muted); margin: -6px 0 16px; padding: 8px 10px; border-left: 2px solid var(--gold); background: rgba(232,176,75,.05); }
   .in-bundles a { color: var(--gold); font-weight: 600; text-decoration: none; }
   .in-bundles span { color: var(--muted); }
+  .write-review { margin-top: 18px; }
+  .write-review summary { display: inline-block; cursor: pointer; color: var(--gold); font-weight: 600; font-size: 14px; border: 1px solid var(--gold); border-radius: 8px; padding: 9px 16px; list-style: none; }
+  .write-review summary::-webkit-details-marker { display: none; }
+  .write-review form { margin-top: 12px; padding: 18px; display: grid; gap: 12px; max-width: 620px; }
+  .write-review label { font-size: 12.5px; font-weight: 600; display: grid; gap: 6px; }
+  .write-review input, .write-review textarea { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font: inherit; padding: 10px 12px; }
+  .write-review textarea { min-height: 90px; resize: vertical; }
+  .write-review .btn { justify-self: start; }
+  .rv-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .rv-msg { margin: 0; font-size: 13px; }
+  @media (max-width: 520px) { .rv-row { grid-template-columns: 1fr; } }
   .reviews { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
   @media (max-width: 1000px) { .reviews { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 620px) { .reviews { grid-template-columns: 1fr; } }
@@ -53,6 +64,8 @@
   .buy .add { padding: 0 12px; height: 44px; }
   .buy-now { width: 100%; height: 44px; background: transparent; border: 1px solid var(--gold); color: var(--cream); border-radius: 8px; font-weight: 700; }
   .stock { font-size: 12px; color: var(--green); margin: 14px 0 18px; display: flex; align-items: center; gap: 7px; }
+  .stock.out { color: var(--muted); }
+  .stock.out::before { background: var(--muted); }
   .stock::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
   .feats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; padding: 16px 8px; margin-bottom: 14px; }
   .feats i { width: 38px; height: 38px; border: 1px solid var(--gold); color: var(--gold); border-radius: 50%; display: grid; place-items: center; margin: 0 auto 8px; }
@@ -113,6 +126,16 @@
   <section class="section" id="reviews" style="scroll-margin-top:90px">
     <div class="section-head"><h2>A Little Love from Our Customers</h2></div>
     <div class="reviews" id="reviewList"></div>
+    <details class="write-review">
+      <summary>Write a review</summary>
+      <form id="reviewForm" class="panel">
+        <div class="rv-row"><label>Your name<input name="name" required maxlength="60" autocomplete="name"></label>
+          <label>City<input name="city" maxlength="40" autocomplete="address-level2"></label></div>
+        <label>Your review<textarea name="text" required minlength="10" maxlength="800"></textarea></label>
+        <button class="btn btn-gold" type="submit">Send review</button>
+        <p class="rv-msg" id="reviewMsg" role="status"></p>
+      </form>
+    </details>
   </section>
 
   <section class="section" id="deliverySlot"></section>
@@ -156,6 +179,7 @@
 </main>
 
 <div id="site-footer"></div>
+<script src="catalog.js"></script>
 <script src="site.js"></script>
 <script>
   const { ico, fmt } = GN;
@@ -208,10 +232,10 @@
       ${inside}${choice}${sizes}
       <div class="buy">
         <div class="qty"><button aria-label="Decrease" onclick="setQty(-1)">−</button><span id="qty">${qty}</span><button aria-label="Increase" onclick="setQty(1)">+</button></div>
-        <button class="add" onclick="GN.add(p.id, qty, this)">${ico.bag} Add to cart</button>
+        ${p.inStock === false ? `<button class="add" disabled>Sold out</button>` : `<button class="add" onclick="GN.add(p.id, qty, this)">${ico.bag} Add to cart</button>`}
       </div>
-      <button class="buy-now" onclick="GN.add(p.id, qty); GN.openCart()">Buy it now</button>
-      <div class="stock">In stock, ready to ship</div>
+      ${p.inStock === false ? "" : `<button class="buy-now" onclick="GN.add(p.id, qty); location.href='checkout.html'">Buy it now</button>`}
+      <div class="stock${p.inStock === false ? " out" : ""}">${p.inStock === false ? "Sold out for now — message us on WhatsApp to be told when it's back" : "In stock, ready to ship"}</div>
       <div class="feats panel">
         <div><i>${ico.truck}</i><b>Free delivery</b><span>All over Pakistan</span></div>
         <div><i>${ico.clock}</i><b>Karachi 24–48h</b><span>Other cities 4–6 days</span></div>
@@ -236,6 +260,17 @@
   }
   GN.mount(document.getElementById("pack"), () => pack);
   document.getElementById("reviewList").innerHTML = GN.reviewsFor(p).map(GN.reviewHTML).join("");
+  document.getElementById("reviewForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const f = new FormData(e.target), msg = document.getElementById("reviewMsg");
+    try {
+      const r = await fetch("/api/reviews", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: f.get("name"), city: f.get("city"), text: f.get("text"), product: p.id }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || "Couldn't send your review.");
+      e.target.reset(); msg.style.color = "var(--green)"; msg.textContent = "Thank you! Your review will appear once we've checked it.";
+    } catch (x) { msg.style.color = "#e88a6b"; msg.textContent = x.message === "Failed to fetch" ? "Couldn't reach the shop. Please try again." : x.message; }
+  });
   document.getElementById("deliverySlot").innerHTML = GN.delivery();
 
   document.getElementById("enjoy").innerHTML = [

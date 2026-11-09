@@ -4,7 +4,7 @@
     {
       "name": "site",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["-e", "const h=require('http'),f=require('fs'),p=require('path');const T={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg'};h.createServer((q,r)=>{let u=decodeURIComponent(q.url.split('?')[0]);if(u==='/')u='/index.html';const fp=p.join(process.cwd(),p.normalize(u));if(!fp.startsWith(process.cwd())){r.writeHead(403);return r.end()}f.readFile(fp,(e,d)=>{r.writeHead(e?404:200,{'Content-Type':T[p.extname(fp)]||'text/plain'});r.end(e?'Not found':d)})}).listen(5173)"],
+      "runtimeArgs": ["server.js"],
       "port": 5173
     }
   ]
