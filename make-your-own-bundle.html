@@ -58,7 +58,7 @@
   <section class="head">
     <span class="eyebrow">Your box, your way</span>
     <h1>Make Your Own Bundle</h1>
-    <p>Mix any jars and sizes you like. Delivery is free all over Pakistan, and you save another 10% when you pay online.</p>
+    <p>Mix any jars and sizes you like. <span id="myoShip">Delivery is free on orders of Rs 4,000 or more</span>, and you save another 10% when you pay online.</p>
   </section>
   <div class="stepper"><span><b>1</b>Pick your jars</span><span><b>2</b>Check your box</span><span><b>3</b>Add to cart</span></div>
 
@@ -74,6 +74,7 @@
 <script>
   GN.init("Make your own bundle");
   const { fmt } = GN;
+  document.getElementById("myoShip").textContent = GN.SHIP_FEE && GN.FREE_AT ? "Delivery is free on orders of " + fmt(GN.FREE_AT) + " or more" : GN.shipShort;
   const MIN = +GN.settings.minJars || 2;
   // One option per jar + size
   const options = GN.products.filter(p => p.type === "singles" && p.inStock !== false).flatMap(p =>
@@ -101,7 +102,7 @@
       <div class="sum-tot">
         <div class="tot"><span>Total (cash on delivery)</span><span>${fmt(total)}</span></div>
         <div class="tot sm"><span>Pay online</span><b>${fmt(GN.online(total))}</b></div>
-        <p class="ship"><b>Free delivery</b> all over Pakistan</p>
+        <p class="ship">${!total ? GN.shipShort : GN.shipFor(total) && GN.FREE_AT ? `Add <b>${fmt(GN.FREE_AT - total)}</b> more for <b>free delivery</b>` : GN.shipFor(total) ? `Delivery ${fmt(GN.SHIP_FEE)}` : "<b>Free delivery</b> on this bundle"}</p>
       </div>
       <button class="add" id="addBundle" ${count < MIN ? "disabled" : ""}>${GN.ico.bag} Add ${count || ""} jar${count === 1 ? "" : "s"} to cart</button>
       <p class="hint">${count < MIN ? `${MIN - count} more to go` : "Looking good!"}</p>

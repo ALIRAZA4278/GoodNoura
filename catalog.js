@@ -12,16 +12,16 @@
    "ribbon": "Most complete",
    "sub": "One of every butter — the full Good Noura experience.",
    "desc": "Almond, cashew and your favourite peanut butter in one box. The easiest way to try everything we make — or to gift it.",
-   "img": "https://goodnoura.com/cdn/shop/files/9.png?v=1793342684&width=800",
+   "img": "img/products/good-noura-collection-1-main.jpg",
    "color": "#c9923f",
    "lids": [
     "#e7d3b1",
     "#efe4c8",
     "#b7773d"
    ],
-   "price": 6499,
-   "onlinePrice": 5849,
-   "separate": 7297,
+   "price": 5299,
+   "onlinePrice": 4769,
+   "separate": 6297,
    "items": [
     [
      "Almond Butter",
@@ -60,15 +60,15 @@
    "badge": "Best seller",
    "sub": "All three peanut butters in the big family jar.",
    "desc": "Creamy, crunchy and chocolate — three 510g jars so everyone at home gets their favourite.",
-   "img": "https://goodnoura.com/cdn/shop/files/10.png?v=1793342723&width=800",
+   "img": "img/products/peanut-family-pack-1-main.jpg",
    "color": "#b7773d",
    "lids": [
     "#d9a566",
     "#b7773d",
     "#5a3220"
    ],
-   "price": 4599,
-   "onlinePrice": 4139,
+   "price": 4050,
+   "onlinePrice": 3645,
    "separate": 5097,
    "items": [
     [
@@ -98,15 +98,15 @@
    "badge": "Premium",
    "sub": "Our two premium nut butters, side by side.",
    "desc": "Silky almond butter and rich cashew butter. A premium pair for breakfast bowls, smoothies and baking.",
-   "img": "https://goodnoura.com/cdn/shop/files/7_2407298a-658f-4847-baa0-c2909dd6fe77.png?v=1793342598&width=800",
+   "img": "img/products/almond-cashew-duo-1-main.jpg",
    "color": "#d8bf94",
    "lids": [
     "#e7d3b1",
     "#efe4c8"
    ],
-   "price": 4999,
-   "onlinePrice": 4499,
-   "separate": 5598,
+   "price": 3999,
+   "onlinePrice": 3599,
+   "separate": 4598,
    "items": [
     [
      "Almond Butter",
@@ -130,7 +130,7 @@
    "flavour": "Creamy",
    "sub": "Smooth, everyday spread.",
    "desc": "Slow-roasted peanuts ground until silky smooth. Made for toast, parathas, apples and a spoon straight from the jar.",
-   "img": "https://goodnoura.com/cdn/shop/files/1_5abb56eb-77a4-4250-9613-587657da051a.png?v=1791733226&width=800",
+   "img": "img/products/creamy-peanut-butter-1-main.jpg",
    "color": "#d9a566",
    "lids": [
     "#d9a566"
@@ -145,7 +145,39 @@
      1699
     ]
    ],
-   "inStock": true
+   "inStock": true,
+   "gallery": [
+    [
+     "Main photo",
+     "img/products/creamy-peanut-butter-1-main.jpg"
+    ],
+    [
+     "Ingredients & label",
+     "img/products/creamy-peanut-butter-2-ingredients.jpg"
+    ],
+    [
+     "Nutrition",
+     "img/products/creamy-peanut-butter-3-nutrition.jpg"
+    ]
+   ],
+   "ingredients": "Premium roasted peanuts, sugar, vegetable oil, salt.",
+   "allergen": "Contains peanuts.",
+   "sizeGallery": {
+    "510g": [
+     [
+      "Main photo",
+      "img/products/creamy-peanut-butter-510g-main.jpg"
+     ],
+     [
+      "Ingredients & protein",
+      "img/products/creamy-peanut-butter-510g-2-ingredients.jpg"
+     ],
+     [
+      "Nutrition",
+      "img/products/creamy-peanut-butter-510g-3-nutrition.jpg"
+     ]
+    ]
+   }
   },
   {
    "id": "crunchy-peanut-butter",
@@ -154,7 +186,7 @@
    "flavour": "Crunchy",
    "sub": "Real roasted peanut bits.",
    "desc": "All the smoothness, with real roasted peanut pieces in every spoon. For people who like a bit of bite.",
-   "img": "https://goodnoura.com/cdn/shop/files/1_4eaec112-bbe3-426d-bda4-8c2e80568356.png?v=1791734896&width=800",
+   "img": "img/products/crunchy-peanut-butter-1-main.jpg",
    "color": "#b7773d",
    "lids": [
     "#b7773d"
@@ -169,7 +201,39 @@
      1699
     ]
    ],
-   "inStock": true
+   "inStock": true,
+   "gallery": [
+    [
+     "Main photo",
+     "img/products/crunchy-peanut-butter-1-main.jpg"
+    ],
+    [
+     "Ingredients & protein",
+     "img/products/crunchy-peanut-butter-2-ingredients.jpg"
+    ],
+    [
+     "Nutrition",
+     "img/products/crunchy-peanut-butter-3-nutrition.jpg"
+    ]
+   ],
+   "sizeGallery": {
+    "510g": [
+     [
+      "Main photo",
+      "img/products/crunchy-peanut-butter-510g-main.jpg"
+     ],
+     [
+      "Ingredients & protein",
+      "img/products/crunchy-peanut-butter-510g-2-ingredients.jpg"
+     ],
+     [
+      "Nutrition",
+      "img/products/crunchy-peanut-butter-510g-3-nutrition.jpg"
+     ]
+    ]
+   },
+   "ingredients": "Premium roasted peanuts, sugar, vegetable oil, salt.",
+   "allergen": "Contains peanuts."
   },
   {
    "id": "chocolate-peanut-butter",
@@ -178,7 +242,7 @@
    "flavour": "Chocolate",
    "sub": "Peanut butter meets cocoa.",
    "desc": "Our peanut butter blended with cocoa. A dessert-worthy spread you can still have at breakfast.",
-   "img": "https://goodnoura.com/cdn/shop/files/1_c5d4d60c-ee6d-4963-a580-91d7075cdb87.png?v=1791735330&width=800",
+   "img": "img/products/chocolate-peanut-butter-1-main.jpg",
    "color": "#5a3220",
    "lids": [
     "#5a3220"
@@ -193,7 +257,23 @@
      1699
     ]
    ],
-   "inStock": true
+   "inStock": true,
+   "gallery": [
+    [
+     "Main photo",
+     "img/products/chocolate-peanut-butter-1-main.jpg"
+    ],
+    [
+     "Ingredients & protein",
+     "img/products/chocolate-peanut-butter-2-ingredients.jpg"
+    ],
+    [
+     "Nutrition",
+     "img/products/chocolate-peanut-butter-3-nutrition.jpg"
+    ]
+   ],
+   "ingredients": "Premium roasted peanuts, sugar, vegetable oil, cocoa powder, salt.",
+   "allergen": "Contains peanuts."
   },
   {
    "id": "almond-butter",
@@ -202,7 +282,7 @@
    "flavour": "Almond",
    "sub": "Pure roasted almonds.",
    "desc": "Roasted almonds ground into a smooth, mild butter. Lovely in smoothies, oats and on fruit.",
-   "img": "img/almond-1-main.webp",
+   "img": "img/products/almond-butter-1-main.jpg",
    "color": "#e7d3b1",
    "lids": [
     "#e7d3b1"
@@ -210,31 +290,35 @@
    "gallery": [
     [
      "Main photo",
-     "img/almond-1-main.webp"
+     "img/products/almond-butter-1-main.jpg"
     ],
     [
-     "Flavour",
-     "img/almond-2-flavour.webp"
+     "Lifestyle",
+     "img/products/almond-butter-2-lifestyle.jpg"
     ],
     [
      "Benefits",
-     "img/almond-3-benefits.png"
+     "img/products/almond-butter-3-benefits.jpg"
     ],
     [
-     "How to use",
-     "img/almond-4-uses.webp"
+     "Protein & ingredients",
+     "img/products/almond-butter-4-ingredients.jpg"
     ],
     [
      "Nutrition",
-     "img/almond-5-nutrition.png"
+     "img/products/almond-butter-5-nutrition.jpg"
+    ],
+    [
+     "Label",
+     "img/products/almond-butter-6-label.jpg"
     ]
    ],
-   "ingredients": "100% roasted almonds. No additives, no preservatives.",
+   "ingredients": "Premium roasted almonds, sugar, vegetable oil, salt.",
    "allergen": "Contains tree nuts (almonds).",
    "sizes": [
     [
      "210g",
-     2799
+     2299
     ]
    ],
    "inStock": true
@@ -246,7 +330,7 @@
    "flavour": "Cashew",
    "sub": "Rich, creamy cashews.",
    "desc": "Naturally sweet and creamy. Spread it, drizzle it, or stir it into curries and desserts.",
-   "img": "https://goodnoura.com/cdn/shop/files/1_ee49cee9-47ff-4176-b330-8d4a99a4417b.png?v=1791735966&width=800",
+   "img": "img/products/cashew-butter-1-main.jpg",
    "color": "#efe4c8",
    "lids": [
     "#efe4c8"
@@ -254,10 +338,28 @@
    "sizes": [
     [
      "210g",
-     2799
+     2299
     ]
    ],
-   "inStock": true
+   "inStock": true,
+   "gallery": [
+    [
+     "Main photo",
+     "img/products/cashew-butter-1-main.jpg"
+    ],
+    [
+     "Rich & creamy",
+     "img/products/cashew-butter-2-spoon.jpg"
+    ],
+    [
+     "Lifestyle",
+     "img/products/cashew-butter-3-lifestyle.jpg"
+    ],
+    [
+     "Nutrition",
+     "img/products/cashew-butter-4-nutrition.jpg"
+    ]
+   ]
   }
  ],
  "reviews": [
@@ -291,10 +393,12 @@
   "whatsapp": "923394888776",
   "email": "Goodnoura6@gmail.com",
   "minJars": 2,
-  "bankName": "",
-  "accountTitle": "",
-  "accountNumber": "",
-  "iban": "",
+  "shippingFee": 350,
+  "freeShipAt": 4000,
+  "bankName": "Meezan Bank",
+  "accountTitle": "QUALIVANTAGE",
+  "accountNumber": "99550116144151",
+  "iban": "PK22MEZN0099550116144151",
   "payNote": "Send a screenshot of your payment on WhatsApp with your order number."
  }
 }

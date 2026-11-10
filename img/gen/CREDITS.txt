@@ -1,0 +1,4 @@
+Photos in this folder
+- *-inside.jpg: cropped from Good Noura's own product photos.
+- All others: from Unsplash (unsplash.com), free for commercial use under the Unsplash License.
+  Swap any of them for your own photos by replacing the file with the same name.

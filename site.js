@@ -9,6 +9,15 @@ const GN = (() => {
   const WHATSAPP = "https://wa.me/" + S.whatsapp;
   const EMAIL = S.email;
   const fmt = n => "Rs " + n.toLocaleString("en-US");
+  // Photo for the chosen size (a sizes row can carry its own photo as a 3rd value), else the main photo
+  const imgOf = (p, size) => { const z = p.sizes && p.sizes.find(r => r[0] === (size || (sel[p.id] || {}).size)); const g = z && p.sizeGallery && p.sizeGallery[z[0]]; return (g && g[0] && g[0][1]) || (z && z[2]) || p.img; };
+  // Shipping: flat fee, free once the full (cash-on-delivery) price of the jars reaches FREE_AT. Set in Admin → Settings.
+  const SHIP_FEE = +S.shippingFee || 0, FREE_AT = +S.freeShipAt || 0;
+  const shipFor = fullPrice => !fullPrice || !SHIP_FEE || (FREE_AT && fullPrice >= FREE_AT) ? 0 : SHIP_FEE;
+  const shipShort = !SHIP_FEE ? "Free delivery all over Pakistan" : FREE_AT ? `Free delivery on orders of ${fmt(FREE_AT)}+` : `Delivery ${fmt(SHIP_FEE)} all over Pakistan`;
+  const shipLong = !SHIP_FEE ? "Delivery is free on every order, all over Pakistan."
+    : FREE_AT ? `Free delivery all over Pakistan on orders of ${fmt(FREE_AT)} or more. Below that, delivery is ${fmt(SHIP_FEE)}.`
+    : `Delivery is ${fmt(SHIP_FEE)} on every order, all over Pakistan.`;
   const online = n => Math.round(n * (1 - PREPAID));
 
   const products = CAT.products;
@@ -56,46 +65,35 @@ const GN = (() => {
     gift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4"/><path d="M5 12v8h14v-8M12 8v12M12 8c-2-4-6-3-5 0M12 8c2-4 6-3 5 0"/></svg>',
   };
 
-  // Simple jar drawing for photo placeholders
+  // Simple jar drawing (used for the make-your-own-bundle slots)
   const jar = (lid, w = 90) => `<svg width="${w}" height="${w * 1.25}" viewBox="0 0 80 100" aria-hidden="true">
     <rect x="14" y="4" width="52" height="16" rx="4" fill="${lid}" stroke="rgba(0,0,0,.18)"/>
     <rect x="10" y="18" width="60" height="78" rx="10" fill="#f4ead9"/>
     <circle cx="40" cy="50" r="15" fill="${lid}" stroke="rgba(0,0,0,.12)"/>
     <rect x="22" y="72" width="36" height="4" rx="2" fill="#c8b8a0"/><rect x="28" y="80" width="24" height="3" rx="1.5" fill="#d8cab4"/></svg>`;
-  const tag = (kind, text) => `<span class="ph-tag"><b>${kind}</b> · ${text}</span>`;
 
-  // Product photo set, following the Potencia-style photo brief
+  // Product photo set: main photo, then generated pictures for each product (img/gen/<id>-<kind>.jpg)
+  const pic = (src, alt) => `<img src="${src}" alt="${esc(alt)}" loading="lazy">`;
+  const GEN = "img/gen/";
   function photos(p) {
-    if (p.gallery) return p.gallery.map(([label, src]) => ({ label, html: `<img src="${src}" alt="${p.name}: ${label}">` }));
-    const hero = { label: "Main photo", html: `<img src="${p.img}" alt="${p.name}">`,
-      note: "Current photo. Reshoot: jar on a clean light background with ingredients flying around it." };
+    if (p.gallery) return p.gallery.map(([label, src]) => ({ label, html: pic(src, p.name + ": " + label) }));
+    const hero = { label: "Main photo", html: pic(p.img, p.name) };
     if (p.type === "bundles") return [hero,
-      { label: "What's inside", html: `<div class="ph" style="background:${p.color}">
-          <div style="display:flex;gap:6px;align-items:flex-end">${p.lids.map(l => jar(l, 70)).join("")}</div>
-          ${tag("Photo to shoot", "every jar in the box, lined up, on a solid colour")}</div>` },
+      { label: "What's inside", html: pic(GEN + p.id + "-inside.jpg", p.name + ": every jar in the box") },
       { label: "Savings", html: `<div class="ph" style="background:#f4ead9;flex-direction:column;text-align:center">
           <div><div style="font:600 18px var(--serif);color:#5a3220">Bundle &amp; save</div>
           <div style="font:700 54px/1 var(--serif);color:#8e3c19">${fmt(p.separate - p.price)}</div>
-          <div style="font-size:13px;color:#5a3220;margin-top:6px">vs. buying each jar separately</div></div>
-          ${tag("Graphic", "savings tile with the new prices (replaces old stickers)")}</div>` },
-      { label: "Lifestyle", html: `<div class="ph" style="background:linear-gradient(160deg,#4a2e1d,#2c1d14)">${jar(p.lids[0], 80)}
-          ${tag("Photo to shoot", "the box opened on a breakfast table, family hands reaching in")}</div>` },
+          <div style="font-size:13px;color:#5a3220;margin-top:6px">vs. buying each jar separately</div>
+          <div style="font-size:13px;color:#5a3220;margin-top:14px">Pay online for <b>${fmt(p.onlinePrice)}</b></div></div></div>` },
+      { label: "Lifestyle", html: pic(GEN + p.id + "-life.jpg", p.name + " on a breakfast table") },
     ];
+    const dark = ["#5a3220", "#b7773d"].includes(p.color);
     return [hero,
-      { label: "Flavour tile", html: `<div class="ph" style="background:${p.color};flex-direction:column">
-          <div style="text-align:center"><div style="font:700 44px/1 var(--serif);color:${["#e7d3b1", "#efe4c8", "#d9a566"].includes(p.color) ? "#4a2e1d" : "#f4ead9"};margin-bottom:12px">${p.flavour}</div>${jar(p.flavour === "Chocolate" ? "#e8b04b" : "#8e3c19", 90)}</div>
-          ${tag("Photo to shoot", `jar on a ${p.flavour.toLowerCase()}-coloured background, flavour name in big type`)}</div>` },
-      { label: "Benefits", html: `<div class="ph" style="background:#f4ead9">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;width:78%;color:#5a3220;font-size:12px;font-weight:600;text-align:center">
-          ${["[Protein per 100g]", "[Key ingredient %]", "[Free from …]", "[Energy / fibre]"].map(t => `<div><div style="width:46px;height:46px;border-radius:50%;background:#8e3c19;color:#f4ead9;display:grid;place-items:center;margin:0 auto 6px">${ico.leaf}</div>${t}</div>`).join("")}</div>
-          ${tag("Graphic", "4 big benefit icons — fill in the real claims")}</div>` },
-      { label: "Lifestyle", html: `<div class="ph" style="background:linear-gradient(160deg,#4a2e1d,#2c1d14)"><div style="display:flex;align-items:center;gap:10px;color:var(--gold)">${jar(p.lids[0], 80)}<span style="width:70px;display:block">${ico.toast}</span></div>
-          ${tag("Photo to shoot", "hand spreading it on toast, paratha or a rice cake")}</div>` },
-      { label: "Nutrition", html: `<div class="ph" style="background:#efe4c8">
-          <div style="background:#fff;border:2px solid #4a2e1d;padding:12px 14px;width:62%;color:#2a1a0f;font-size:12px">
-          <div style="font:700 15px var(--serif);border-bottom:6px solid #4a2e1d;padding-bottom:4px;margin-bottom:6px">Nutrition per 100g</div>
-          ${["Energy", "Protein", "Carbohydrates", "Sugar", "Fat", "Fibre"].map(r => `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding:3px 0"><span>${r}</span><span>[—]</span></div>`).join("")}</div>
-          ${tag("Graphic", "nutrition table next to the jar — add real values")}</div>` },
+      { label: "Flavour", html: pic(GEN + p.id + "-flavour.jpg", p.name + ": flavour") },
+      { label: "Why you'll love it", html: `<div class="ph" style="background:${p.color}">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;width:80%;color:${dark ? "#f4ead9" : "#3a2116"};font-size:13px;font-weight:600;text-align:center">
+          ${[[ico.leaf, "Natural ingredients"], [ico.heart, "No preservatives"], [ico.flask, "Small-batch made"], [ico.bowl, "Rich in protein"]].map(([i, t]) => `<div><div style="width:52px;height:52px;border-radius:50%;background:${dark ? "#f4ead9" : "#5a3220"};color:${dark ? "#5a3220" : "#f4ead9"};display:grid;place-items:center;margin:0 auto 8px;padding:13px">${i}</div>${t}</div>`).join("")}</div></div>` },
+      { label: "Lifestyle", html: pic(GEN + p.id + "-life.jpg", p.name + " spread on toast") },
     ];
   }
 
@@ -105,13 +103,13 @@ const GN = (() => {
   function header(active) {
     return `<div class="announce"><div class="wrap">
         <span>Pay online &amp; <b>save 10%</b> on every order</span>
-        <span>Free delivery all over Pakistan · Karachi in 24–48 hrs</span></div></div>
+        <span>${shipShort} · Karachi in 24–48 hrs</span></div></div>
       <header class="site"><div class="wrap">
         <div style="display:flex;align-items:center;gap:14px">
           <button class="icon-btn menu-btn" aria-label="Menu" onclick="document.body.classList.toggle('menu-open')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
           <nav class="nav">${NAV.slice(1).map(([h, t]) => `<a href="${h}"${t === active ? ' class="active"' : ""}>${t}</a>`).join("")}</nav>
         </div>
-        <a class="logo" href="index.html"><img src="https://goodnoura.com/cdn/shop/files/fav_icon_circle.png?v=1789566538&width=120" alt=""><span>GOOD NOURA</span></a>
+        <a class="logo" href="index.html" aria-label="Good Noura home"><img src="img/logo-squirrel.png" alt="" width="64" height="64"><span>GOOD NOURA<small>Honest nut butters</small></span></a>
         <div class="tools">
           <a class="phone" href="${TEL}">${PHONE}</a>
           <a class="icon-btn hide-sm" aria-label="WhatsApp" href="${WHATSAPP}">${ico.chat}</a>
@@ -136,7 +134,7 @@ const GN = (() => {
         <div class="lines" id="lines"></div><footer id="cartFoot"></footer></aside>`;
   }
   const delivery = () => `<div class="delivery">
-      <p><span class="gold" style="display:inline-flex;width:18px">${ico.clock}</span> <span><b>Free delivery</b> on every order, all over Pakistan</span></p>
+      <p><span class="gold" style="display:inline-flex;width:18px">${ico.clock}</span> <span>${shipLong}</span></p>
       <div class="steps">
         <div class="step"><i>${ico.bag}</i><b>Ordered</b><span>Today</span></div>
         <div class="step"><i>${ico.truck}</i><b>Karachi</b><span>24–48 hrs</span></div>
@@ -156,7 +154,7 @@ const GN = (() => {
     const was = p.separate ? `<span class="was">${fmt(p.separate)}</span><span class="save">Save ${fmt(p.separate - price)}</span>` : "";
     return `<article class="card${p.featured ? " featured" : ""}">
       ${p.ribbon ? `<span class="ribbon">${p.ribbon}</span>` : ""}
-      <a class="media" href="${url(p)}"><img src="${p.img}" alt="${p.name}" loading="lazy">${badges}</a>
+      <a class="media" href="${url(p)}"><img src="${imgOf(p)}" alt="${p.name}" loading="lazy">${badges}</a>
       <div class="body">
         <h3 class="title"><a href="${url(p)}">${p.name}</a></h3>
         <p class="sub">${p.sub}</p>
@@ -189,7 +187,7 @@ const GN = (() => {
     const p = byId(id);
     if (!p || p.inStock === false) return;
     const variant = variantOf(p);
-    addLine({ key: id + "|" + variant, name: p.name, img: p.img, variant, price: priceOf(p), onlinePrice: onlineOf(p) }, qty);
+    addLine({ key: id + "|" + variant, name: p.name, img: imgOf(p, variant), variant, price: priceOf(p), onlinePrice: onlineOf(p) }, qty);
     if (btn && !btn.closest(".drawer")) {
       const html = btn.innerHTML;
       btn.classList.add("added"); btn.innerHTML = "Added ✓";
@@ -227,6 +225,7 @@ const GN = (() => {
     const count = cart.reduce((n, l) => n + l.qty, 0);
     const total = cart.reduce((n, l) => n + l.qty * l.price, 0);
     const totalOnline = cart.reduce((n, l) => n + l.qty * l.onlinePrice, 0);
+    const ship = shipFor(total);
     const c = document.getElementById("cartCount"); if (c) c.textContent = count;
     const lines = document.getElementById("lines"); if (!lines) return;
     lines.innerHTML = cart.length ? cart.map((l, i) => `
@@ -236,9 +235,10 @@ const GN = (() => {
         <div class="lp">${fmt(l.price * l.qty)}</div></div>`).join("") + upsellHTML()
       : `<p class="empty">Your cart is empty.</p>` + upsellHTML();
     document.getElementById("cartFoot").innerHTML = cart.length ? `
-      <p class="ship"><b>Free delivery</b> all over Pakistan</p>
-      <div class="tot"><span>Total (cash on delivery)</span><span>${fmt(total)}</span></div>
-      <div class="tot sm"><span>Pay online</span><b>${fmt(totalOnline)}</b></div>
+      <p class="ship">${ship && FREE_AT ? `Add <b>${fmt(FREE_AT - total)}</b> more for <b>free delivery</b>` : ship ? "Delivery all over Pakistan" : "<b>Free delivery</b> on this order"}</p>
+      <div class="tot sm"><span>Delivery</span><span>${ship ? fmt(ship) : "Free"}</span></div>
+      <div class="tot"><span>Total (cash on delivery)</span><span>${fmt(total + ship)}</span></div>
+      <div class="tot sm"><span>Pay online</span><b>${fmt(totalOnline + ship)}</b></div>
       <a class="add" href="checkout.html">Check out</a>` : "";
   }
   const openCart = () => document.body.classList.add("cart-open");
@@ -247,6 +247,7 @@ const GN = (() => {
 
   function init(active) {
     document.getElementById("site-header").outerHTML = header(active);
+    if (!document.querySelector("link[rel=icon]")) document.head.insertAdjacentHTML("beforeend", '<link rel="icon" href="img/logo-squirrel.png">');
     document.getElementById("site-footer").outerHTML = footer();
     document.addEventListener("click", e => {
       const opt = e.target.closest(".opt[data-id]");
@@ -265,6 +266,6 @@ const GN = (() => {
     renderCart();
   }
 
-  return { products, byId, url, reviews, reviewsFor, reviewHTML, bundlesWith, sel, priceOf, onlineOf, savePct, fmt, online, ico, jar, photos, delivery, card, mount, rerender,
+  return { products, byId, url, reviews, reviewsFor, reviewHTML, bundlesWith, sel, priceOf, onlineOf, savePct, fmt, online, ico, jar, photos, imgOf, delivery, shipFor, shipShort, shipLong, SHIP_FEE, FREE_AT, card, mount, rerender,
     add, addLine, openCart, closeCart, clearCart, cart: () => cart, esc, init, settings: S, PHONE, WHATSAPP, EMAIL };
 })();

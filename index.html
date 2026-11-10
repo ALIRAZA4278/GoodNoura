@@ -38,6 +38,7 @@
 
   .why { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
   .why-art { aspect-ratio: 4 / 3; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); }
+  .why-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .why h2 { font-size: 36px; margin: 8px 0 12px; }
   .why p { color: var(--muted); }
   .why .ticks { margin: 18px 0 24px; font-size: 13.5px; }
@@ -86,7 +87,7 @@
       <div class="perks" id="perks"></div>
     </div>
     <div class="hero-art">
-      <img src="https://goodnoura.com/cdn/shop/files/1_5abb56eb-77a4-4250-9613-587657da051a.png?v=1791733226&width=900" alt="Good Noura creamy peanut butter">
+      <img src="img/hero-front.jpg" alt="Good Noura creamy peanut butter">
       <span class="nut" style="top:5%;left:12%;transform:rotate(-20deg)"></span>
       <span class="nut" style="top:8%;right:10%;transform:rotate(25deg)"></span>
       <span class="nut" style="bottom:6%;left:8%;transform:rotate(10deg)"></span>
@@ -109,9 +110,7 @@
   </section>
 
   <section class="section why">
-    <div class="why-art"><div class="ph" style="background:linear-gradient(160deg,#6b3f22,#2c1d14)">
-      <div style="display:flex;gap:6px;align-items:flex-end" id="whyJars"></div>
-      <span class="ph-tag"><b>Photo to shoot</b> · peanuts being roasted / jars being filled in your kitchen</span></div></div>
+    <div class="why-art"><img src="img/gen/why-kitchen.jpg" alt="Peanuts roasted and jars filled in a home kitchen" loading="lazy"></div>
     <div>
       <span class="eyebrow">Why Good Noura</span>
       <h2>Simple. Honest. Made with care.</h2>
@@ -120,7 +119,7 @@
         <li>Small-batch roasted and ground</li>
         <li>Roasted nuts at the heart of every jar</li>
         <li>Recipe and quality standards set by a food scientist with 20+ years in food safety</li>
-        <li>Free delivery all over Pakistan</li>
+        <li id="whyShip">Free delivery on orders of Rs 4,000+</li>
       </ul>
       <a class="btn btn-line" href="our-story.html">Read our story</a>
     </div>
@@ -159,11 +158,11 @@
   const { ico, jar } = GN;
 
   document.getElementById("perks").innerHTML = [
-    [ico.truck, "Free delivery all over Pakistan"], [ico.heart, "Pay online, save 10%"]]
+    [ico.truck, GN.shipShort], [ico.heart, "Pay online, save 10%"]]
     .map(([i, t]) => `<span>${i}${t}</span>`).join("");
 
   document.getElementById("trust").innerHTML = [
-    [ico.truck, "Free delivery", "All over Pakistan"],
+    [ico.truck, GN.SHIP_FEE ? "Free delivery" : "Free delivery", GN.SHIP_FEE && GN.FREE_AT ? "On orders of " + GN.fmt(GN.FREE_AT) + "+" : "All over Pakistan"],
     [ico.clock, "Karachi in 24–48 hrs", "Other cities 4–6 days"],
     [ico.leaf, "Simple ingredients", "Just the good stuff"],
     [ico.flask, "Food-scientist made", "20+ yrs in food safety"],
@@ -178,8 +177,6 @@
       <h3>${p.flavour}</h3><span>From ${GN.fmt(p.sizes[0][1])}</span></a>`;
   }).join("");
 
-  document.getElementById("whyJars").innerHTML = ["#d9a566", "#5a3220", "#e7d3b1"].map(c => jar(c, 80)).join("");
-
   document.getElementById("enjoy").innerHTML = [
     [ico.toast, "Toast & parathas", "The breakfast classic — spread thick, top with banana or honey."],
     [ico.blender, "Smoothies & shakes", "A spoonful makes any shake richer and more filling."],
@@ -191,6 +188,7 @@
 
   document.getElementById("myobJars").innerHTML = ["#d9a566", "#b7773d", "#5a3220", "#e7d3b1", "#efe4c8"].map(c => jar(c, 70)).join("");
   document.getElementById("deliverySlot").innerHTML = GN.delivery();
+  document.getElementById("whyShip").textContent = GN.shipShort;
 </script>
 </body>
 </html>

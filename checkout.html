@@ -70,7 +70,8 @@
     const pay = payment(), lines = GN.cart();
     const subtotal = lines.reduce((n, l) => n + l.qty * (pay === "online" ? l.onlinePrice : l.price), 0);
     const discount = promo ? Math.round(subtotal * promo.pct / 100) : 0;
-    return { subtotal, discount, total: subtotal - discount, codTotal: lines.reduce((n, l) => n + l.qty * l.price, 0) };
+    const codTotal = lines.reduce((n, l) => n + l.qty * l.price, 0), shipping = GN.shipFor(codTotal);
+    return { subtotal, discount, shipping, total: subtotal - discount + shipping, codTotal };
   }
 
   function render() {
@@ -102,7 +103,7 @@
           </div>
           <div id="formErr"></div>
           <button class="add place" type="submit" id="placeBtn">Place order</button>
-          <p class="muted" style="font-size:12px;text-align:center;margin-top:8px">Free delivery all over Pakistan · Karachi 24–48 hrs, other cities 4–6 days</p>
+          <p class="muted" style="font-size:12px;text-align:center;margin-top:8px">${GN.shipShort} · Karachi 24–48 hrs, other cities 4–6 days</p>
         </form>
         <aside class="summary panel">
           <h2>Order summary</h2>
@@ -130,7 +131,8 @@
       <div class="tline"><span>Subtotal${pay === "online" ? " (online price)" : ""}</span><span>${fmt(t.subtotal)}</span></div>
       ${pay === "online" ? `<div class="tline"><span>You save by paying online</span><span class="free">− ${fmt(t.codTotal - t.subtotal)}</span></div>` : ""}
       ${promo ? `<div class="tline"><span>Promo ${esc(promo.code)} (${promo.pct}%)</span><span class="free">− ${fmt(t.discount)}</span></div>` : ""}
-      <div class="tline"><span>Delivery</span><span class="free">Free</span></div>
+      <div class="tline"><span>Delivery</span>${t.shipping ? `<span>${fmt(t.shipping)}</span>` : `<span class="free">Free</span>`}</div>
+      ${t.shipping && GN.FREE_AT ? `<p class="promo-msg" style="margin:2px 0 6px">Add ${fmt(GN.FREE_AT - t.codTotal)} more for free delivery.</p>` : ""}
       <div class="tline big"><span>Total</span><span>${fmt(t.total)}</span></div>`;
   }
 

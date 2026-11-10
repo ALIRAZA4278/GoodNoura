@@ -15,6 +15,7 @@
   .intro p { color: var(--muted); font-size: 16px; margin: 0; }
   .founder { display: grid; grid-template-columns: 1fr 1.1fr; gap: 44px; align-items: center; }
   .founder .art { aspect-ratio: 4 / 5; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); }
+  .founder .art img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .founder h2 { font-size: 34px; margin: 8px 0 14px; }
   .founder p { color: var(--muted); font-size: 15px; }
   .founder blockquote { margin: 22px 0 0; padding: 0 0 0 18px; border-left: 3px solid var(--gold); font: italic 500 20px/1.4 var(--serif); color: var(--cream); }
@@ -50,7 +51,7 @@
   </section>
 
   <section class="section founder">
-    <div class="art"><div class="ph" style="background:linear-gradient(160deg,#6b3f22,#2c1d14)" id="founderArt"></div></div>
+    <div class="art"><img src="img/gen/story-kitchen.jpg" alt="Good Noura nut butter being made by hand in the kitchen" loading="lazy"></div>
     <div>
       <span class="eyebrow">How it began</span>
       <h2>Built by a food scientist</h2>
@@ -93,12 +94,10 @@
 <script>
   GN.init("Our story");
   const { ico } = GN;
-  document.getElementById("founderArt").innerHTML = `<div style="color:var(--gold);width:90px">${ico.heart}</div>
-    <span class="ph-tag"><b>Photo to shoot</b> · the founder in the kitchen with a jar, warm natural light</span>`;
   document.getElementById("values").innerHTML = [
     [ico.leaf, "Honest ingredients", "Nothing on the label we wouldn't explain to our own kids."],
     [ico.flask, "Made with know-how", "Recipe and quality standards set by a food scientist with 20+ years in food safety."],
-    [ico.heart, "Made for families", "Sizes, prices and free delivery that make it easy to keep a jar at home."],
+    [ico.heart, "Made for families", "Sizes, prices and bundles that make it easy to keep a jar at home."],
   ].map(([i, h, t]) => `<div class="tile">${i}<h4>${h}</h4><p>${t}</p></div>`).join("");
 </script>
 </body>

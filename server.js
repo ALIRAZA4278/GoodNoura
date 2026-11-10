@@ -27,6 +27,10 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, expires INTEGER);
 `);
 
+// Shipping column (added after launch) and default shipping settings
+if (!db.prepare("PRAGMA table_info(orders)").all().some(c => c.name === "shipping")) db.exec("ALTER TABLE orders ADD COLUMN shipping INTEGER DEFAULT 0");
+db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('shippingFee', '350'), ('freeShipAt', '4000')").run();
+
 const now = () => new Date().toISOString();
 const J = s => (s ? JSON.parse(s) : null);
 
@@ -81,10 +85,15 @@ function priceItems(items, products, { strict = true } = {}) {
   }
   return out;
 }
+// Shipping: a flat fee, free when the full (cash-on-delivery) price of the jars reaches the threshold.
+// The online saving and promo codes come off the jars only, never the shipping.
 const totals = (lines, payment, pct = 0) => {
   const subtotal = lines.reduce((n, l) => n + l.qty * (payment === "online" ? l.onlinePrice : l.price), 0);
+  const fullPrice = lines.reduce((n, l) => n + l.qty * l.price, 0);
   const discount = Math.round(subtotal * pct / 100);
-  return { subtotal, discount, total: subtotal - discount };
+  const s = getSettings(), fee = +s.shippingFee || 0, freeAt = +s.freeShipAt || 0;
+  const shipping = lines.length && fee && !(freeAt && fullPrice >= freeAt) ? fee : 0;
+  return { subtotal, discount, shipping, total: subtotal - discount + shipping };
 };
 const activePromo = code => code ? db.prepare("SELECT * FROM promos WHERE code = ? AND active = 1").get(String(code).trim().toUpperCase()) : null;
 
@@ -161,14 +170,14 @@ async function shopApi(req, res, url) {
     const promo = activePromo(b.promo);
     const t = totals(lines, payment, promo ? promo.pct : 0);
     const id = newOrderId();
-    db.prepare(`INSERT INTO orders (id, created_at, name, phone, email, address, city, payment, items, subtotal, discount, promo, total, status, notes, timeline)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', '[]', ?)`)
-      .run(id, now(), o.name, o.phone, o.email, o.address, o.city, payment, JSON.stringify(lines), t.subtotal, t.discount, promo ? promo.code : "", t.total,
+    db.prepare(`INSERT INTO orders (id, created_at, name, phone, email, address, city, payment, items, subtotal, discount, promo, shipping, total, status, notes, timeline)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', '[]', ?)`)
+      .run(id, now(), o.name, o.phone, o.email, o.address, o.city, payment, JSON.stringify(lines), t.subtotal, t.discount, promo ? promo.code : "", t.shipping, t.total,
         JSON.stringify([{ at: now(), text: "Order placed on the website" }]));
     if (promo) db.prepare("UPDATE promos SET uses = uses + 1 WHERE code = ?").run(promo.code);
     if (b.cartToken) db.prepare("DELETE FROM carts WHERE token = ?").run(str(b.cartToken, 64));
     const s = publicSettings();
-    return send(res, 201, { id, total: t.total, payment, bank: payment === "online"
+    return send(res, 201, { id, total: t.total, shipping: t.shipping, payment, bank: payment === "online"
       ? { bankName: s.bankName, accountTitle: s.accountTitle, accountNumber: s.accountNumber, iban: s.iban, payNote: s.payNote } : null });
   }
   if (route === "POST /api/reviews") {
@@ -224,9 +233,9 @@ async function adminApi(req, res, url) {
   if (route === "GET orders.csv") {
     const ids = (url.searchParams.get("ids") || "").split(",").filter(Boolean);
     const rows = db.prepare("SELECT * FROM orders ORDER BY created_at DESC").all().map(orderRow).filter(o => !ids.length || ids.includes(o.id));
-    const head = ["Order", "Date", "Status", "Name", "WhatsApp", "Email", "Address", "City", "Payment", "Items", "Subtotal", "Promo", "Discount", "Total", "Notes"];
+    const head = ["Order", "Date", "Status", "Name", "WhatsApp", "Email", "Address", "City", "Payment", "Items", "Subtotal", "Promo", "Discount", "Shipping", "Total", "Notes"];
     const csv = [head, ...rows.map(o => [o.id, o.created_at, o.status, o.name, o.phone, o.email, o.address, o.city, o.payment === "online" ? "Online" : "COD",
-      o.items.map(l => `${l.qty} x ${l.name}${l.variant ? ` (${l.variant})` : ""}`).join("; "), o.subtotal, o.promo, o.discount, o.total, o.notes.map(n => n.text).join(" | ")])]
+      o.items.map(l => `${l.qty} x ${l.name}${l.variant ? ` (${l.variant})` : ""}`).join("; "), o.subtotal, o.promo, o.discount, o.shipping || 0, o.total, o.notes.map(n => n.text).join(" | ")])]
       .map(r => r.map(csvCell).join(",")).join("\r\n");
     res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="good-noura-orders-${now().slice(0, 10)}.csv"` });
     return res.end("﻿" + csv);
@@ -338,6 +347,8 @@ async function adminApi(req, res, url) {
     const allowed = { phone: 30, whatsapp: 20, email: 120, bankName: 80, accountTitle: 80, accountNumber: 40, iban: 40, payNote: 300 };
     Object.entries(allowed).forEach(([k, max]) => { if (b[k] !== undefined) setSetting(k, str(b[k], max)); });
     if (b.whatsapp !== undefined) setSetting("whatsapp", str(b.whatsapp, 20).replace(/\D/g, "").replace(/^0/, "92"));
+    if (b.shippingFee !== undefined) setSetting("shippingFee", Math.min(5000, Math.max(0, parseInt(b.shippingFee, 10) || 0)));
+    if (b.freeShipAt !== undefined) setSetting("freeShipAt", Math.min(1e6, Math.max(0, parseInt(b.freeShipAt, 10) || 0)));
     if (b.minJars !== undefined) setSetting("minJars", Math.min(12, Math.max(1, parseInt(b.minJars, 10) || 2)));
     return send(res, 200, publicSettings());
   }
@@ -366,8 +377,13 @@ function cleanProduct(d) {
   if (!p.color) p.color = p.lids[0];
   if (!p.flavour && p.type === "singles") p.flavour = p.name.split(/[ ,]/)[0];
   if (Array.isArray(d.gallery) && d.gallery.length) p.gallery = d.gallery.filter(g => g && g[1]).map(([l, s]) => [str(l, 40) || "Photo", str(s, 500)]).slice(0, 12);
+  if (d.sizeGallery && typeof d.sizeGallery === "object") {
+    const sg = {};
+    Object.entries(d.sizeGallery).slice(0, 6).forEach(([z, g]) => { if (Array.isArray(g) && g.length) sg[str(z, 20)] = g.filter(x => x && x[1]).map(([l, s]) => [str(l, 40) || "Photo", str(s, 500)]).slice(0, 12); });
+    if (Object.keys(sg).length) p.sizeGallery = sg;
+  }
   if (p.type === "singles") {
-    p.sizes = (d.sizes || []).filter(s => s && s[0] && +s[1] > 0).map(([z, v]) => [str(z, 20), Math.round(+v)]);
+    p.sizes = (d.sizes || []).filter(s => s && s[0] && +s[1] > 0).map(([z, v, img]) => img && str(img, 500) ? [str(z, 20), Math.round(+v), str(img, 500)] : [str(z, 20), Math.round(+v)]);
     if (!p.sizes.length) throw new Bad("Add at least one size with a price.");
   } else {
     p.price = Math.round(+d.price); p.onlinePrice = Math.round(+d.onlinePrice) || onlinePrice(p.price); p.separate = Math.round(+d.separate) || p.price;

@@ -64,7 +64,7 @@
     <div>
       <h2>Quick answers</h2>
       <div class="acc">
-        <details open><summary>How much is delivery?</summary><p>Delivery is free on every order, all over Pakistan.</p></details>
+        <details open><summary>How much is delivery?</summary><p id="faqShip">Free delivery all over Pakistan on orders of Rs 4,000 or more. Below that, delivery is Rs 350.</p></details>
         <details><summary>How long does delivery take?</summary><p>Karachi: 24–48 hours. Other cities: 4–6 business days.</p></details>
         <details><summary>How can I pay?</summary><p>Cash on delivery, or pay online and save an extra 10% on your order.</p></details>
         <details><summary>Can I mix my own bundle?</summary><p>Yes — pick any jars and sizes on the <a class="gold" href="make-your-own-bundle.html">Make Your Own Bundle</a> page.</p></details>
@@ -80,6 +80,7 @@
 <script src="site.js"></script>
 <script>
   GN.init("Contact");
+  document.getElementById("faqShip").textContent = GN.shipLong;
   const { ico } = GN;
   document.getElementById("ways").innerHTML = [
     [GN.WHATSAPP, ico.chat, "WhatsApp", "Fastest way to reach us", GN.PHONE],

@@ -78,7 +78,8 @@
   .recipe h3 { color: #3a2116; font-size: 28px; margin: 0 0 6px; }
   .recipe .hl { display: inline-block; background: #8e3c19; color: #f4ead9; font-weight: 700; padding: 4px 10px; border-radius: 4px; margin-bottom: 14px; }
   .recipe ol { margin: 0; padding-left: 18px; font-size: 13.5px; display: grid; gap: 4px; }
-  .recipe .art { position: relative; }
+  .recipe .art { position: relative; background: #d9a566; }
+  .recipe .art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
   .two { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; }
   .two h2 { font-size: 30px; margin: 0 0 12px; }
@@ -154,7 +155,7 @@
         <span class="hl" id="recipeName"></span>
         <ol id="recipeSteps"></ol>
       </div>
-      <div class="art"><div class="ph" style="background:linear-gradient(160deg,#d9a566,#b7773d)" id="recipeArt"></div></div>
+      <div class="art" id="recipeArt"></div>
     </div>
   </section>
 
@@ -166,7 +167,7 @@
         <details open><summary>Ingredients</summary><p id="ingredients"></p></details>
         <details><summary>Storage</summary><p>Keep in a cool, dry place out of direct sunlight, and always use a clean, dry spoon. Best enjoyed within 30 days of opening the jar. Seeing a little oil on top? That's just the natural nut oil rising — give it a good stir.</p></details>
         <details><summary>Allergen information</summary><p id="allergen">Contains tree nuts and/or peanuts. [Add factory allergen statement.]</p></details>
-        <details><summary>Delivery &amp; payment</summary><p>Free delivery all over Pakistan. Karachi in 24–48 hrs, other cities in 4–6 business days. Pay cash on delivery, or pay online and save 10%.</p></details>
+        <details><summary>Delivery &amp; payment</summary><p><span id="shipFaq">Free delivery on orders of Rs 4,000 or more.</span> Karachi in 24–48 hrs, other cities in 4–6 business days. Pay cash on delivery, or pay online and save 10%.</p></details>
       </div>
     </div>
     <div id="sideCol"></div>
@@ -183,6 +184,7 @@
 <script src="site.js"></script>
 <script>
   const { ico, fmt } = GN;
+  document.getElementById("shipFaq").textContent = GN.shipLong;
   const p = GN.byId(new URLSearchParams(location.search).get("p")) || GN.products[0];
   GN.init(p.type === "bundles" ? "Bundles" : "Shop all");
   document.title = `${p.name} – Good Noura`;
@@ -204,6 +206,24 @@
   document.getElementById("thumbs").innerHTML = shots.map((s, i) =>
     `<button class="thumb" aria-label="${s.label}" onclick="showPhoto(${i})">${s.html}</button>`).join("");
   showPhoto(0);
+  // Sizes with their own photos (e.g. 510g): swap the gallery when that size is picked
+  if (p.sizeGallery || (p.sizes && p.sizes.some(r => r[2]))) {
+    let lastSize = null;
+    const swap = () => {
+      const size = (GN.sel[p.id] || {}).size;
+      if (size === lastSize) return;
+      lastSize = size;
+      const set = p.sizeGallery && p.sizeGallery[size];
+      const next = set ? set.map(([label, src]) => ({ label, html: `<img src="${src}" alt="${GN.esc(p.name + ": " + label)}">` }))
+        : GN.photos(p).map((s, i) => i ? s : { ...s, html: `<img src="${GN.imgOf(p, size)}" alt="${GN.esc(p.name)}">` });
+      shots.splice(0, shots.length, ...next);
+      document.getElementById("thumbs").innerHTML = shots.map((s, i) =>
+        `<button class="thumb" aria-label="${s.label}" onclick="showPhoto(${i})">${s.html}</button>`).join("");
+      showPhoto(0);
+    };
+    swap();
+    document.addEventListener("gn:select", swap);
+  }
 
   // Buy box
   let qty = 1;
@@ -237,7 +257,7 @@
       ${p.inStock === false ? "" : `<button class="buy-now" onclick="GN.add(p.id, qty); location.href='checkout.html'">Buy it now</button>`}
       <div class="stock${p.inStock === false ? " out" : ""}">${p.inStock === false ? "Sold out for now — message us on WhatsApp to be told when it's back" : "In stock, ready to ship"}</div>
       <div class="feats panel">
-        <div><i>${ico.truck}</i><b>Free delivery</b><span>All over Pakistan</span></div>
+        <div><i>${ico.truck}</i><b>Free delivery</b><span>${GN.FREE_AT && GN.SHIP_FEE ? "On orders of " + fmt(GN.FREE_AT) + "+" : "All over Pakistan"}</span></div>
         <div><i>${ico.clock}</i><b>Karachi 24–48h</b><span>Other cities 4–6 days</span></div>
         <div><i>${ico.flask}</i><b>Food-scientist made</b><span>20+ yrs in food safety</span></div>
         <div><i>${ico.leaf}</i><b>Simple ingredients</b><span>Roasted nuts first</span></div>
@@ -292,8 +312,8 @@
   const [rName, rSteps] = recipes[p.flavour] || ["Peanut butter with rice cakes", ["2 tbsp peanut butter", "2–3 brown rice cakes", "Spread evenly over each cake", "Top with apple, banana or berries"]];
   document.getElementById("recipeName").textContent = rName;
   document.getElementById("recipeSteps").innerHTML = rSteps.map(s => `<li>${s}</li>`).join("");
-  document.getElementById("recipeArt").innerHTML = `${GN.jar(p.lids[0] === "#efe4c8" || p.lids[0] === "#e7d3b1" ? "#8e3c19" : p.lids[0], 110)}
-    <span class="ph-tag"><b>Photo to shoot</b> · the recipe plated next to the jar (wide banner)</span>`;
+  const rImg = { Chocolate: "chocolate", Almond: "almond", Cashew: "cashew" }[p.flavour] || "peanut";
+  document.getElementById("recipeArt").innerHTML = `<img src="img/gen/recipe-${rImg}.jpg" alt="${GN.esc(rName)}" loading="lazy">`;
 
   document.getElementById("story").textContent = p.type === "bundles"
     ? "Every jar in this box is made the same way: carefully picked nuts, roasted for a deep flavour and ground in small batches."

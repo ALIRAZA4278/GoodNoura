@@ -35,7 +35,7 @@ async function boot() {
 }
 function showLogin(firstTime) {
   closeDrawer();
-  $("#app").innerHTML = `<div class="login"><form class="card form" id="loginForm">
+  $("#app").innerHTML = `<div class="login"><form class="card form" id="loginForm"><img class="login-logo" src="/img/logo-squirrel.png" alt="Good Noura">
     <h1>${firstTime ? "Create your admin password" : "Good Noura admin"}</h1>
     <p>${firstTime ? "This is the first time the admin has been opened. Choose a password (8+ characters) — you'll use it to log in from now on." : "Log in to manage orders and products."}</p>
     <label>Password<input type="password" name="password" required minlength="${firstTime ? 8 : 1}" autocomplete="${firstTime ? "new-password" : "current-password"}" autofocus></label>
@@ -61,7 +61,7 @@ const state = { orders: [], carts: [], products: [], reviews: [], promos: [], se
 
 function showApp() {
   $("#app").innerHTML = `<header class="top"><div class="in">
-      <div class="brand">GOOD NOURA <small>ADMIN</small></div>
+      <div class="brand"><img src="/img/logo-squirrel.png" alt=""><span>GOOD NOURA</span> <small>ADMIN</small></div>
       <nav class="tabs" role="tablist">${TABS.map(t => `<button role="tab" data-tab="${t}">${t}<span class="count" data-count="${t}" hidden></span></button>`).join("")}</nav>
       <div class="right"><a href="/" target="_blank" rel="noopener">View shop ↗</a><button id="logout">Log out</button></div></div></header>
     <main class="page" id="page"></main>`;
@@ -249,7 +249,7 @@ async function openOrder(id, editing = false) {
           <b>${fmt(l.qty * (o.payment === "online" ? l.onlinePrice : l.price))}</b></div>`).join("")}</div>
         <div style="margin-top:12px"><div class="tot"><span>Subtotal${o.payment === "online" ? " (online prices)" : ""}</span><span>${fmt(o.subtotal)}</span></div>
           ${o.discount ? `<div class="tot"><span>Promo ${esc(o.promo)}</span><span>− ${fmt(o.discount)}</span></div>` : ""}
-          <div class="tot"><span>Delivery</span><span>Free</span></div>
+          <div class="tot"><span>Delivery</span><span>${o.shipping ? fmt(o.shipping) : "Free"}</span></div>
           <div class="tot big"><span>Total · ${o.payment === "online" ? "Paid online (bank transfer)" : "Cash on delivery"}</span><span>${fmt(o.total)}</span></div></div></div>
       <div class="card sec"><h3>Update status</h3><div class="status-grid">${STATUSES.map(s => `<button data-status="${s}" aria-pressed="${s === o.status}">${s}</button>`).join("")}</div>
         <p style="margin:12px 0 0"><a class="b wa" id="waBtn" target="_blank" rel="noopener" href="${waLink(o.phone, WA_TEXT[o.status](o))}">💬 Send WhatsApp update</a>
@@ -290,6 +290,7 @@ function afterOrderChange(reload) {
 // ---------- Abandoned carts ----------
 async function abandoned() {
   state.carts = await api("carts");
+  { const st = await api("settings"); state.ship = { fee: st.shippingFee, at: st.freeShipAt }; }
   const list = state.carts;
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Abandoned carts</h1><p>People who typed their WhatsApp number or email at checkout but didn't place the order.</p></div>
@@ -299,7 +300,7 @@ async function abandoned() {
         <td class="hide-sm sub">${c.items.map(l => `${l.qty}× ${esc(l.name)}${l.variant ? ` (${esc(l.variant)})` : ""}`).join("<br>")}</td>
         <td class="num"><b>${fmt(c.total)}</b></td><td class="hide-sm sub">${ago(c.updated_at)}</td>
         <td class="num"><div class="actions" style="justify-content:flex-end">
-          ${c.phone ? `<a class="b sm wa" target="_blank" rel="noopener" href="${waLink(c.phone, `Hi ${c.name || "there"}, you left ${c.items.map(l => l.name).join(", ")} in your Good Noura cart. Can we help you complete your order? Delivery is free all over Pakistan, and you save 10% when you pay online.`)}">💬 WhatsApp</a>` : ""}
+          ${c.phone ? `<a class="b sm wa" target="_blank" rel="noopener" href="${waLink(c.phone, `Hi ${c.name || "there"}, you left ${c.items.map(l => l.name).join(", ")} in your Good Noura cart. Can we help you complete your order? ${+state.ship?.fee && +state.ship?.at ? `Delivery is free on orders of ${fmt(+state.ship.at)} or more, and you` : "You"} save 10% when you pay online.`)}">💬 WhatsApp</a>` : ""}
           ${c.email ? `<a class="b sm" href="mailto:${esc(c.email)}?subject=${encodeURIComponent("Your Good Noura cart")}&body=${encodeURIComponent(`Hi ${c.name || "there"},\n\nYou left some nut butter in your cart. Reply to this email or message us on WhatsApp and we'll get your order sorted.\n\nGood Noura`)}">✉ Email</a>` : ""}
           <button class="b sm danger" data-del="${esc(c.token)}">Delete</button></div></td></tr>`).join("")}</tbody></table>`
       : `<div class="empty">No abandoned carts. When someone starts checkout and leaves, they'll show here so you can follow up.</div>`}</div>`;
@@ -344,7 +345,7 @@ async function productList(type) {
 const products = () => productList("singles");
 const bundles = () => productList("bundles");
 
-const rowsHTML = (name, rows, ph) => rows.map(r => `<div class="r"><input data-${name}="0" value="${esc(r[0])}" placeholder="${ph[0]}"><input data-${name}="1" value="${esc(r[1])}" placeholder="${ph[1]}" ${name === "size" ? 'type="number" min="1"' : ""}><button type="button" class="b sm danger" data-rm>✕</button></div>`).join("");
+const rowsHTML = (name, rows, ph) => rows.map(r => `<div class="r${name === "size" ? " size" : ""}"><input data-${name}="0" value="${esc(r[0])}" placeholder="${ph[0]}"><input data-${name}="1" value="${esc(r[1])}" placeholder="${ph[1]}" ${name === "size" ? 'type="number" min="1"' : ""}>${name === "size" ? `<input data-size="2" value="${esc(r[2] || "")}" placeholder="Photo for this size (optional)">` : ""}<button type="button" class="b sm danger" data-rm>✕</button></div>`).join("");
 const galHTML = g => g.map(([l, s]) => `<div class="r gal"><img src="${esc(s)}" alt=""><input data-gal="0" value="${esc(l)}" placeholder="Label (e.g. Nutrition)"><input data-gal="1" value="${esc(s)}" placeholder="Image path or URL"><button type="button" class="b sm danger" data-rm>✕</button></div>`).join("");
 function editProduct(p) {
   const isB = p.type === "bundles", isNew = !p.id;
@@ -399,9 +400,9 @@ function editProduct(p) {
   $("#galFile").onchange = run(async e => { for (const f of e.target.files) { const path = await upload(f); $("#gallery").insertAdjacentHTML("beforeend", galHTML([[f.name.replace(/\.\w+$/, "").replace(/[-_]/g, " "), path]])); } toast("Photos uploaded."); });
   form.onsubmit = run(async e => {
     e.preventDefault();
-    const f = new FormData(form), rows = (sel, k) => $$(sel + " .r").map(r => [$(`[data-${k}="0"]`, r).value.trim(), $(`[data-${k}="1"]`, r).value.trim()]).filter(r => r[0] || r[1]);
+    const f = new FormData(form), rows = (sel, k) => $(sel + " .r").map(r => { const x = [$(`[data-${k}="0"]`, r).value.trim(), $(`[data-${k}="1"]`, r).value.trim()]; const ph = $(`[data-${k}="2"]`, r); if (ph && ph.value.trim()) x.push(ph.value.trim()); return x; }).filter(r => r[0] || r[1]);
     const data = { type: p.type, name: f.get("name"), sub: f.get("sub"), badge: f.get("badge"), desc: f.get("desc"), img: f.get("img"),
-      gallery: rows("#gallery", "gal"), lids: p.lids };
+      gallery: rows("#gallery", "gal"), lids: p.lids, sizeGallery: p.sizeGallery };
     if (isB) Object.assign(data, { price: f.get("price"), onlinePrice: f.get("onlinePrice"), separate: f.get("separate"), items: rows("#items", "item"), contains: f.getAll("contains"),
       ribbon: f.get("ribbon"), featured: !!f.get("featured"), color: p.color,
       choice: f.get("choiceOpts").trim() ? { label: f.get("choiceLabel"), opts: f.get("choiceOpts").split(",").map(s => s.trim()).filter(Boolean) } : null });
@@ -498,6 +499,11 @@ async function settings() {
         <div class="row"><label>Account number<input name="accountNumber" value="${v("accountNumber")}"></label><label>IBAN<input name="iban" value="${v("iban")}"></label></div>
         <label>Instructions<textarea name="payNote" style="min-height:60px">${v("payNote")}</textarea></label>
         <button class="b primary" type="submit" style="justify-self:start">Save</button></form>
+      <form class="card box form" id="shipForm"><h2>Delivery charges</h2>
+        <p class="muted" style="margin:-4px 0 0;font-size:12.5px">Added at checkout. Orders whose full price (before the online saving) reaches the free-delivery amount ship free. Put 0 as the fee to make delivery free on every order.</p>
+        <div class="row"><label>Delivery fee (Rs)<input name="shippingFee" type="number" min="0" max="5000" value="${esc(s.shippingFee ?? 0)}"></label>
+        <label>Free delivery from (Rs) <small>(0 = never)</small><input name="freeShipAt" type="number" min="0" value="${esc(s.freeShipAt ?? 0)}"></label></div>
+        <button class="b primary" type="submit" style="justify-self:start">Save</button></form>
       <form class="card box form" id="passForm"><h2>Change password</h2>
         <label>Current password<input name="current" type="password" required autocomplete="current-password"></label>
         <label>New password <small>(8+ characters)</small><input name="next" type="password" required minlength="8" autocomplete="new-password"></label>
@@ -506,7 +512,7 @@ async function settings() {
         <a class="b" href="/api/admin/backup" download>⬇ Download backup</a></div>
     </div>`;
   const save = id => $(id).onsubmit = run(async e => { e.preventDefault(); state.settings = await api("settings", { method: "PUT", body: Object.fromEntries(new FormData(e.target)) }); toast("Saved."); settings(); });
-  save("#contactForm"); save("#bankForm");
+  save("#contactForm"); save("#bankForm"); save("#shipForm");
   $("#passForm").onsubmit = run(async e => { e.preventDefault(); await api("password", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); e.target.reset(); toast("Password changed."); });
 }
 
