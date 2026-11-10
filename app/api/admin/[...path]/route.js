@@ -1,5 +1,5 @@
 import {
-  Bad, IMAGE_BUCKET, STATUSES, allProductRows, checkPass, cleanProduct, clearedCookie, cookieOf, csvCell, getSettings, handle, hashPass, isAdmin, json,
+  Bad, IMAGE_BUCKET, STATUSES, allProductRows, checkPass, cleanProduct, clearedCookie, cookieOf, csvCell, emailOk, getSettings, handle, hashPass, isAdmin, json,
   newSessionCookie, now, productRow, publicSettings, q, readJSON, sb, setSetting, slug, str, withoutPrivate,
 } from "@/lib/server";
 
@@ -29,17 +29,20 @@ async function admin(req, ctx) {
   if (req.method !== "GET" && !(req.headers.get("content-type") || "").includes("application/json")) throw new Bad("Bad request.");
   if (route === "POST setup") {
     if (hasPass) throw new Bad("A password is already set.", 403);
-    const { password } = await readJSON(req);
+    const { email, password } = await readJSON(req);
+    if (!emailOk(email)) throw new Bad("Use the admin email to set up the admin.", 403);
     if (String(password || "").length < 8) throw new Bad("Use at least 8 characters.");
     await setSetting("passHash", hashPass(String(password)));
     return json({ ok: true }, 200, { "Set-Cookie": await newSessionCookie() });
   }
   if (route === "POST login") {
     if (Date.now() < failed.until) throw new Bad("Too many tries. Wait a minute and try again.", 429);
-    const { password } = await readJSON(req);
-    if (!checkPass(String(password || ""), settings.passHash)) {
+    const { email, password } = await readJSON(req);
+    // Always check both, so the answer doesn't reveal which one was wrong.
+    const goodPass = checkPass(String(password || ""), settings.passHash), goodEmail = emailOk(email);
+    if (!goodPass || !goodEmail) {
       failed.n++; if (failed.n >= 5) failed = { n: 0, until: Date.now() + 60e3 };
-      throw new Bad("Wrong password.", 401);
+      throw new Bad("Wrong email or password.", 401);
     }
     failed.n = 0;
     return json({ ok: true }, 200, { "Set-Cookie": await newSessionCookie() });

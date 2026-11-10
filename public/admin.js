@@ -38,7 +38,8 @@ function showLogin(firstTime) {
   $("#app").innerHTML = `<div class="login"><form class="card form" id="loginForm"><img class="login-logo" src="/img/logo-squirrel.png" alt="Good Noura">
     <h1>${firstTime ? "Create your admin password" : "Good Noura admin"}</h1>
     <p>${firstTime ? "This is the first time the admin has been opened. Choose a password (8+ characters) — you'll use it to log in from now on." : "Log in to manage orders and products."}</p>
-    <label>Password<input type="password" name="password" required minlength="${firstTime ? 8 : 1}" autocomplete="${firstTime ? "new-password" : "current-password"}" autofocus></label>
+    <label>Email<input type="email" name="email" required autocomplete="username" autofocus></label>
+    <label>Password<input type="password" name="password" required minlength="${firstTime ? 8 : 1}" autocomplete="${firstTime ? "new-password" : "current-password"}"></label>
     ${firstTime ? `<label>Type it again<input type="password" name="again" required autocomplete="new-password"></label>` : ""}
     <p class="err" id="loginErr"></p>
     <button class="b primary" type="submit">${firstTime ? "Create password and open admin" : "Log in"}</button></form></div>`;
@@ -47,7 +48,7 @@ function showLogin(firstTime) {
     const f = new FormData(e.target);
     try {
       if (firstTime && f.get("password") !== f.get("again")) throw new Error("The two passwords don't match.");
-      await api(firstTime ? "setup" : "login", { method: "POST", body: { password: f.get("password") } });
+      await api(firstTime ? "setup" : "login", { method: "POST", body: { email: f.get("email"), password: f.get("password") } });
       showApp();
     } catch (x) { $("#loginErr").textContent = x.message; }
   };
