@@ -1,5 +1,5 @@
 // Good Noura — header/footer, product cards and cart for every page.
-// Products, reviews and contact details come from catalog.js (live from the database when server.js runs). Pay online = 10% off.
+// Products, reviews and contact details come from /catalog.js (live from the database). Pay online = 10% off.
 const GN = (() => {
   const PREPAID = 0.10;
   const CAT = window.GN_CATALOG;

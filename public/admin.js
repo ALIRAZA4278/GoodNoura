@@ -1,5 +1,5 @@
 // Good Noura admin: orders, abandoned carts, products, bundles, reviews, promo codes and settings.
-// Talks to /api/admin/* on server.js. Everything shown from orders/reviews is escaped (it comes from customers).
+// Talks to /api/admin/* (Next.js API routes). Everything shown from orders/reviews is escaped (it comes from customers).
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -31,7 +31,7 @@ async function boot() {
     const s = await api("status");
     if (s.loggedIn) return showApp();
     showLogin(!s.setup);
-  } catch (e) { $("#app").innerHTML = `<p class="boot">Can't reach the shop server. Start it with <b>start-shop.bat</b> (or <code>node server.js</code>) and reload.</p>`; }
+  } catch (e) { $("#app").innerHTML = `<p class="boot">Can't reach the shop server. Check your internet connection and reload. If it keeps happening, the site's server or database is down.</p>`; }
 }
 function showLogin(firstTime) {
   closeDrawer();
