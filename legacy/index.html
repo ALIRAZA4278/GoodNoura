@@ -35,6 +35,7 @@
   .flav:hover { transform: translateY(-4px); }
   .flav h3 { margin: 12px 0 2px; font-size: 20px; color: inherit; }
   .flav span { font-size: 12px; opacity: .8; }
+  .flav img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; box-shadow: 0 10px 24px rgba(0,0,0,.22); }
 
   .why { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
   .why-art { aspect-ratio: 4 / 3; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); }
@@ -173,7 +174,7 @@
   document.getElementById("flavours").innerHTML = GN.products.filter(p => p.type === "singles").map(p => {
     const dark = ["#5a3220", "#b7773d"].includes(p.color);
     return `<a class="flav" href="${GN.url(p)}" style="background:${p.color};color:${dark ? "#f4ead9" : "#3a2116"}">
-      ${jar(p.lids[0] === "#efe4c8" || p.lids[0] === "#e7d3b1" ? "#8e3c19" : p.lids[0], 70)}
+      <img src="${GN.esc(p.img)}" alt="${GN.esc(p.name)}" loading="lazy">
       <h3>${p.flavour}</h3><span>From ${GN.fmt(p.sizes[0][1])}</span></a>`;
   }).join("");
 

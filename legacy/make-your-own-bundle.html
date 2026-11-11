@@ -29,9 +29,10 @@
   .summary { position: sticky; top: 96px; padding: 20px; }
   .summary h2 { font-size: 24px; margin: 0 0 12px; }
   .slots { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; min-height: 52px; }
-  .slots .s { width: 44px; height: 52px; border: 1px dashed var(--line); border-radius: 8px; display: grid; place-items: center; overflow: hidden; }
+  .slots .s { width: 52px; height: 52px; border: 1px dashed var(--line); border-radius: 8px; display: grid; place-items: center; overflow: hidden; }
   .slots .s.filled { border-style: solid; border-color: var(--gold); }
   .slots .s svg { width: 32px; height: auto; }
+  .slots .s img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .sum-lines { list-style: none; padding: 0; margin: 0 0 14px; font-size: 13px; display: grid; gap: 6px; }
   .sum-lines li { display: flex; justify-content: space-between; gap: 10px; }
   .sum-lines li span:last-child { color: var(--muted); white-space: nowrap; }
@@ -92,12 +93,12 @@
     const chosen = options.filter(o => o.qty);
     const count = chosen.reduce((n, o) => n + o.qty, 0);
     const total = chosen.reduce((n, o) => n + o.qty * o.price, 0);
-    const jars = chosen.flatMap(o => Array(o.qty).fill(o.p.lids[0]));
+    const jars = chosen.flatMap(o => Array(o.qty).fill(GN.imgOf(o.p, o.size)));   // the photo of each chosen jar
     const slots = Math.max(MIN, jars.length + 1);
     document.getElementById("summary").innerHTML = `
       <h2>Your bundle</h2>
       <div class="slots">${Array.from({ length: Math.min(slots, 12) }, (_, i) =>
-        `<span class="s${jars[i] ? " filled" : ""}">${jars[i] ? GN.jar(jars[i], 32) : ""}</span>`).join("")}</div>
+        `<span class="s${jars[i] ? " filled" : ""}">${jars[i] ? `<img src="${GN.esc(jars[i])}" alt="">` : ""}</span>`).join("")}</div>
       ${count ? `<ul class="sum-lines">${chosen.map(o => `<li><span>${o.qty} × ${o.p.name} ${o.size}</span><span>${fmt(o.qty * o.price)}</span></li>`).join("")}</ul>` : `<p class="muted" style="font-size:13px">Add at least ${MIN} jars to build your bundle.</p>`}
       <div class="sum-tot">
         <div class="tot"><span>Total (cash on delivery)</span><span>${fmt(total)}</span></div>
