@@ -35,7 +35,7 @@ const GN = (() => {
   };
   const reviewHTML = r => `<div class="review"><span class="avatar">${esc(r.name.split(" ").map(w => w[0]).join("").slice(0, 2))}</span>
     <div><b>${esc(r.name)}</b><p>“${esc(r.text)}”</p><span class="review-meta">${[r.city, (byId(r.product) || {}).name].filter(Boolean).map(esc).join(" · ")}</span></div></div>`;
-  const url = p => `product.html?p=${p.id}`;
+  const url = p => `/product?p=${p.id}`;
 
   // Selected size / peanut-butter choice per product, shared by every card on the page
   const sel = {};
@@ -98,8 +98,8 @@ const GN = (() => {
   }
 
   // Header / footer / cart drawer
-  const NAV = [["index.html", "Home"], ["bundles.html", "Shop all"], ["bundles.html?filter=bundles", "Bundles"],
-    ["make-your-own-bundle.html", "Make your own bundle"], ["our-story.html", "Our story"], ["contact.html", "Contact"]];
+  const NAV = [["/", "Home"], ["/bundles", "Shop all"], ["/bundles?filter=bundles", "Bundles"],
+    ["/make-your-own-bundle", "Make your own bundle"], ["/our-story", "Our story"], ["/contact", "Contact"]];
   function header(active) {
     return `<div class="announce"><div class="wrap">
         <span>Pay online &amp; <b>save 10%</b> on every order</span>
@@ -109,7 +109,7 @@ const GN = (() => {
           <button class="icon-btn menu-btn" aria-label="Menu" onclick="document.body.classList.toggle('menu-open')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
           <nav class="nav">${NAV.slice(1).map(([h, t]) => `<a href="${h}"${t === active ? ' class="active"' : ""}>${t}</a>`).join("")}</nav>
         </div>
-        <a class="logo" href="index.html" aria-label="Good Noura home"><img src="img/logo-squirrel.png" alt="" width="64" height="64"><span>GOOD NOURA<small>Honest nut butters</small></span></a>
+        <a class="logo" href="/" aria-label="Good Noura home"><img src="img/logo-squirrel.png" alt="" width="64" height="64"><span>GOOD NOURA<small>Honest nut butters</small></span></a>
         <div class="tools">
           <a class="phone" href="${TEL}">${PHONE}</a>
           <a class="icon-btn hide-sm" aria-label="WhatsApp" href="${WHATSAPP}">${ico.chat}</a>
@@ -120,8 +120,8 @@ const GN = (() => {
     return `<footer class="site"><div class="wrap"><div class="cols">
         <div><h3>Rooted in care. Made to be loved.</h3><p>Honest nut butters, delivered free all over Pakistan.</p></div>
         <div><h4>Quick links</h4><ul>
-          <li><a href="bundles.html">Shop all</a></li><li><a href="make-your-own-bundle.html">Make Your Own Bundle</a></li>
-          <li><a href="our-story.html">Our Story</a></li><li><a href="contact.html">Contact Us</a></li>
+          <li><a href="/bundles">Shop all</a></li><li><a href="/make-your-own-bundle">Make Your Own Bundle</a></li>
+          <li><a href="/our-story">Our Story</a></li><li><a href="/contact">Contact Us</a></li>
           <li><a href="https://goodnoura.com/pages/privacy-policy">Privacy Policy</a></li><li><a href="https://goodnoura.com/pages/terms-and-conditions">Terms and Conditions</a></li></ul></div>
         <div><h4>Contact us</h4><ul>
           <li>Phone / WhatsApp: <a href="${TEL}">${PHONE}</a></li>
@@ -239,7 +239,7 @@ const GN = (() => {
       <div class="tot sm"><span>Delivery</span><span>${ship ? fmt(ship) : "Free"}</span></div>
       <div class="tot"><span>Total (cash on delivery)</span><span>${fmt(total + ship)}</span></div>
       <div class="tot sm"><span>Pay online</span><b>${fmt(totalOnline + ship)}</b></div>
-      <a class="add" href="checkout.html">Check out</a>` : "";
+      <a class="add" href="/checkout">Check out</a>` : "";
   }
   const openCart = () => document.body.classList.add("cart-open");
   const closeCart = () => document.body.classList.remove("cart-open");

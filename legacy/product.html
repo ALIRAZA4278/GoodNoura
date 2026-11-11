@@ -189,7 +189,7 @@
   GN.init(p.type === "bundles" ? "Bundles" : "Shop all");
   document.title = `${p.name} – Good Noura`;
   document.getElementById("crumbs").innerHTML =
-    `<a href="index.html">Home</a> › <a href="bundles.html${p.type === "bundles" ? "?filter=bundles" : ""}">${p.type === "bundles" ? "Bundles" : "Shop"}</a> › <b>${p.name}</b>`;
+    `<a href="/">Home</a> › <a href="/bundles${p.type === "bundles" ? "?filter=bundles" : ""}">${p.type === "bundles" ? "Bundles" : "Shop"}</a> › <b>${p.name}</b>`;
 
   // Gallery
   const shots = GN.photos(p);
@@ -254,7 +254,7 @@
         <div class="qty"><button aria-label="Decrease" onclick="setQty(-1)">−</button><span id="qty">${qty}</span><button aria-label="Increase" onclick="setQty(1)">+</button></div>
         ${p.inStock === false ? `<button class="add" disabled>Sold out</button>` : `<button class="add" onclick="GN.add(p.id, qty, this)">${ico.bag} Add to cart</button>`}
       </div>
-      ${p.inStock === false ? "" : `<button class="buy-now" onclick="GN.add(p.id, qty); location.href='checkout.html'">Buy it now</button>`}
+      ${p.inStock === false ? "" : `<button class="buy-now" onclick="GN.add(p.id, qty); location.href='/checkout'">Buy it now</button>`}
       <div class="stock${p.inStock === false ? " out" : ""}">${p.inStock === false ? "Sold out for now — message us on WhatsApp to be told when it's back" : "In stock, ready to ship"}</div>
       <div class="feats panel">
         <div><i>${ico.truck}</i><b>Free delivery</b><span>${GN.FREE_AT && GN.SHIP_FEE ? "On orders of " + fmt(GN.FREE_AT) + "+" : "All over Pakistan"}</span></div>
@@ -300,7 +300,7 @@
     [ico.cake, "Desserts & baking", "Cookies, brownies and drizzles — or straight from the jar."],
   ].map(([i, h, t]) => `<div class="tile">${i}<h4>${h}</h4><p>${t}</p></div>`).join("");
   document.getElementById("proMove").innerHTML = p.type === "bundles"
-    ? `Want a different mix? <a href="make-your-own-bundle.html">Make your own bundle</a>.`
+    ? `Want a different mix? <a href="/make-your-own-bundle">Make your own bundle</a>.`
     : `<b>Pro move:</b> get it in the <a href="${GN.url(GN.byId("good-noura-collection"))}">Good Noura Collection</a> and try every butter.`;
 
   // Recipe banner (wide image in the photo brief)

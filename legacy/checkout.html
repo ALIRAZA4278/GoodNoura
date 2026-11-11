@@ -84,11 +84,11 @@
     const lines = GN.cart();
     if (!lines.length) {
       main.innerHTML = `<div class="empty-co"><h1 style="font-size:36px">Your cart is empty</h1><p class="muted">Pick a jar or a bundle to get started.</p>
-        <a class="btn btn-gold" href="bundles.html">Shop now</a></div>`;
+        <a class="btn btn-gold" href="/bundles">Shop now</a></div>`;
       return;
     }
     main.innerHTML = `
-      <div class="crumbs"><a href="index.html">Home</a> › <b>Checkout</b></div>
+      <div class="crumbs"><a href="/">Home</a> › <b>Checkout</b></div>
       <div class="co">
         <form id="form" novalidate>
           <h1>Checkout</h1>

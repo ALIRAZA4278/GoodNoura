@@ -3,12 +3,13 @@ const pages = ["bundles", "product", "checkout", "contact", "make-your-own-bundl
 /** @type {import('next').NextConfig} */
 export default {
   poweredByHeader: false,
-  // The pages link to each other as "bundles.html", "index.html" etc. Keep those links working.
-  async rewrites() {
+  // The shop used to have "bundles.html" style addresses. Send old links, bookmarks and search results to the clean address
+  // (the query part, like ?p=almond-butter, is kept).
+  async redirects() {
     return [
-      { source: "/index.html", destination: "/" },
-      { source: "/admin.html", destination: "/admin" },
-      ...pages.map(p => ({ source: `/${p}.html`, destination: `/${p}` })),
+      { source: "/index.html", destination: "/", permanent: true },
+      { source: "/admin.html", destination: "/admin", permanent: true },
+      ...pages.map(p => ({ source: `/${p}.html`, destination: `/${p}`, permanent: true })),
     ];
   },
 };

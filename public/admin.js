@@ -349,7 +349,7 @@ async function productList(type) {
         <div class="pactions">
           <button class="b sm" data-stock="${esc(p.id)}">${p.inStock ? "Mark sold out" : "Back in stock"}</button>
           <button class="b sm" data-vis="${esc(p.id)}">${p.visible ? "Hide" : "Show"}</button>
-          <a class="b sm" href="/product.html?p=${encodeURIComponent(p.id)}" target="_blank" rel="noopener">View</a>
+          <a class="b sm" href="/product?p=${encodeURIComponent(p.id)}" target="_blank" rel="noopener">View</a>
           <button class="b sm primary" data-edit="${esc(p.id)}">Edit</button></div></div>`).join("")}`
       : `<div class="empty">Nothing here yet.</div>`}</div>
     ${isB ? `<div class="card box" style="margin-top:14px;max-width:560px"><h2>Make Your Own Bundle</h2>

@@ -37,7 +37,7 @@
   if (!last || !last.order || !last.order.id) {
     main.innerHTML = `<div class="empty-co"><h1 style="font-size:36px">No recent order here</h1>
       <p class="muted">If you just placed an order, we'll message you on WhatsApp to confirm it.</p>
-      <a class="btn btn-gold" href="bundles.html">Back to the shop</a></div>`;
+      <a class="btn btn-gold" href="/bundles">Back to the shop</a></div>`;
   } else {
     const d = last.order, name = last.name || "";
     const b = d.bank, has = b && (b.accountNumber || b.iban);
@@ -53,7 +53,7 @@
         <div><span>Amount</span><b>${fmt(d.total)}</b></div>
         ${b && b.payNote ? `<p class="muted" style="margin:8px 0 0;font-size:12.5px">${esc(b.payNote)}</p>` : ""}</div>` : `<p class="muted">Please keep <b>${fmt(d.total)}</b> ready for the rider.</p>`}
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">
-        <a class="btn btn-gold" href="${wa}">Message us on WhatsApp</a><a class="btn btn-line" href="index.html">Back to the shop</a></div></div>`;
+        <a class="btn btn-gold" href="${wa}">Message us on WhatsApp</a><a class="btn btn-line" href="/">Back to the shop</a></div></div>`;
 
     // Meta Pixel "Purchase" — once per order (a refresh of this page doesn't count it twice).
     // The pixel itself loads a moment after the page, so wait for it.
