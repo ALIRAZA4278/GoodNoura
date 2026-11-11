@@ -232,3 +232,10 @@ body.drawer-open .drawer { transform: none; }
   .timeline li { grid-template-columns: 1fr; gap: 0; }
   .bar-row { grid-template-columns: 90px 1fr 36px; }
 }
+
+/* Show/hide password (eye) button */
+.pw { position: relative; display: block; }
+.pw input { padding-right: 44px; }
+.pw .eye { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; background: none; border: 0; border-radius: 8px; color: var(--muted); cursor: pointer; }
+.pw .eye:hover { color: var(--rust); }
+.pw .eye:focus-visible { outline: 2px solid var(--rust); outline-offset: 0; }

@@ -13,7 +13,9 @@ const waNumber = p => { let d = String(p || "").replace(/\D/g, ""); if (d.starts
 const waLink = (phone, text) => `https://wa.me/${waNumber(phone)}?text=${encodeURIComponent(text)}`;
 
 async function api(path, { method = "GET", body } = {}) {
-  const r = await fetch("/api/admin/" + path, { method, headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
+  // Every non-GET request must say it is JSON (the server rejects anything else), even when it has no body: logout and the delete buttons.
+  const write = method !== "GET";
+  const r = await fetch("/api/admin/" + path, { method, headers: write ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : write ? "{}" : undefined });
   const d = await r.json().catch(() => ({}));
   if (r.status === 401 && path !== "login") { showLogin(); throw new Error("Please log in again."); }
   if (!r.ok) throw new Error(d.error || "Something went wrong.");
@@ -33,6 +35,27 @@ async function boot() {
     showLogin(!s.setup);
   } catch (e) { $("#app").innerHTML = `<p class="boot">Can't reach the shop server. Check your internet connection and reload. If it keeps happening, the site's server or database is down.</p>`; }
 }
+// Puts a show/hide (eye) button on every password field inside `root`
+const EYE = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_OFF = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.6 10.6 0 0 1 12 19C5.5 19 1.5 12 1.5 12a18.5 18.5 0 0 1 4.6-5.4M9.9 5.2A9.7 9.7 0 0 1 12 5c6.5 0 10.5 7 10.5 7a18.6 18.6 0 0 1-2.2 3.2M1 1l22 22"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>`;
+function addEyes(root) {
+  root.querySelectorAll("input[type=password]").forEach(input => {
+    const wrap = document.createElement("span");
+    wrap.className = "pw";
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "eye"; btn.setAttribute("aria-label", "Show password"); btn.innerHTML = EYE;
+    btn.onclick = () => {
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.innerHTML = show ? EYE_OFF : EYE;
+      btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+      input.focus();
+    };
+    wrap.appendChild(btn);
+  });
+}
 function showLogin(firstTime) {
   closeDrawer();
   $("#app").innerHTML = `<div class="login"><form class="card form" id="loginForm"><img class="login-logo" src="/img/logo-squirrel.png" alt="Good Noura">
@@ -43,6 +66,7 @@ function showLogin(firstTime) {
     ${firstTime ? `<label>Type it again<input type="password" name="again" required autocomplete="new-password"></label>` : ""}
     <p class="err" id="loginErr"></p>
     <button class="b primary" type="submit">${firstTime ? "Create password and open admin" : "Log in"}</button></form></div>`;
+  addEyes($("#loginForm"));
   $("#loginForm").onsubmit = async e => {
     e.preventDefault();
     const f = new FormData(e.target);
@@ -514,6 +538,7 @@ async function settings() {
     </div>`;
   const save = id => $(id).onsubmit = run(async e => { e.preventDefault(); state.settings = await api("settings", { method: "PUT", body: Object.fromEntries(new FormData(e.target)) }); toast("Saved."); settings(); });
   save("#contactForm"); save("#bankForm"); save("#shipForm");
+  addEyes($("#passForm"));
   $("#passForm").onsubmit = run(async e => { e.preventDefault(); await api("password", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); e.target.reset(); toast("Password changed."); });
 }
 
