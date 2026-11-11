@@ -273,3 +273,11 @@ body.cart-open .drawer { transform: none; }
   .tiles { gap: 10px; }
   .tile { padding: 14px; }
 }
+
+/* Floating WhatsApp button (bottom right, every page) */
+.wa-float { position: fixed; right: 18px; bottom: 22px; z-index: 30; width: 58px; height: 58px; border-radius: 50%; background: #25d366; display: grid; place-items: center;
+  box-shadow: 0 6px 22px rgba(37,211,102,.45); transition: transform .15s; }
+.wa-float:hover { transform: scale(1.08); }
+.wa-float:active { transform: scale(.95); }
+body.cart-open .wa-float { display: none; }
+@media (max-width: 520px) { .wa-float { right: 14px; bottom: 16px; width: 54px; height: 54px; } }

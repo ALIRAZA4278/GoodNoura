@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { notifyOrder } from "@/lib/email";
 import { activePromo, Bad, handle, json, now, priceItems, publicSettings, q, readJSON, sb, shopProducts, str, totals } from "@/lib/server";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,8 @@ export const POST = handle(async req => {
   }));
   if (promo) await q(sb().from("promos").update({ uses: (promo.uses || 0) + 1 }).eq("code", promo.code));
   if (b.cartToken) await q(sb().from("carts").delete().eq("token", str(b.cartToken, 64)));
+  // Email the shop (always) and the customer (if they gave an email). Failures are logged, never shown to the shopper.
+  await notifyOrder({ id, ...o, payment, items: lines, subtotal: t.subtotal, discount: t.discount, promo: promo ? promo.code : "", shipping: t.shipping, total: t.total }, s);
   return json({
     id, total: t.total, shipping: t.shipping, payment,
     bank: payment === "online" ? { bankName: s.bankName, accountTitle: s.accountTitle, accountNumber: s.accountNumber, iban: s.iban, payNote: s.payNote } : null,
