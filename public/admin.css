@@ -150,8 +150,7 @@ body.drawer-open .drawer { transform: none; }
 .form legend { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; padding: 0 4px; }
 .rows { display: grid; gap: 6px; }
 .rows .r { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; }
-.rows .r.size { grid-template-columns: 1fr 1fr 2fr auto; }
-@media (max-width: 640px) { .rows .r.size { grid-template-columns: 1fr 1fr auto; } .rows .r.size input[data-size="2"] { grid-column: 1 / 3; grid-row: 2; } }
+.rows .r.size { grid-template-columns: 1fr 1fr 64px auto; align-items: center; }
 .rows .r.gal { grid-template-columns: 54px 1fr 2fr auto; align-items: center; }
 .rows .r img { width: 54px; height: 54px; object-fit: cover; border-radius: 6px; background: var(--line-soft); }
 .img-pick { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: center; }
@@ -239,3 +238,22 @@ body.drawer-open .drawer { transform: none; }
 .pw .eye { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; background: none; border: 0; border-radius: 8px; color: var(--muted); cursor: pointer; }
 .pw .eye:hover { color: var(--rust); }
 .pw .eye:focus-visible { outline: 2px solid var(--rust); outline-offset: 0; }
+
+/* Per-size photo picker (admin → product → Sizes and prices) */
+.sz-photo { display: block; }
+.sz-btn { width: 60px; height: 54px; padding: 0; border: 1px dashed var(--line); border-radius: 8px; background: #fff; cursor: pointer; position: relative; overflow: hidden; color: var(--muted); font: inherit; }
+.sz-btn:hover { border-color: var(--rust); color: var(--rust); }
+.rows .r .sz-btn img { width: 100%; height: 100%; border-radius: 0; display: block; }
+.sz-btn > span { position: absolute; inset: auto 0 0 0; font-size: 10px; font-weight: 700; text-align: center; background: rgba(31,20,14,.72); color: #fff; padding: 1px 0; }
+.sz-btn > .none { position: static; background: none; color: inherit; display: grid; place-items: center; height: 100%; font-size: 11px; line-height: 1.2; }
+.sz-btn .none small { display: block; font-weight: 400; font-size: 9.5px; }
+.sz-panel { grid-column: 1 / -1; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--line-soft, #f6efe6); }
+.sz-panel[hidden] { display: none; }
+.sz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.sz-opt { display: grid; gap: 4px; justify-items: center; align-content: start; padding: 5px; border: 2px solid transparent; border-radius: 10px; background: #fff; cursor: pointer; font: inherit; color: var(--text); text-align: center; }
+.sz-opt:hover { border-color: var(--line); }
+.sz-opt.on { border-color: var(--rust); }
+.rows .r .sz-opt img { width: 100%; height: 72px; object-fit: cover; border-radius: 6px; }
+.sz-opt small { font-size: 10.5px; line-height: 1.2; color: var(--muted); overflow-wrap: anywhere; }
+.sz-opt .blank { display: grid; place-items: center; width: 100%; height: 72px; border: 1px dashed var(--line); border-radius: 6px; font-size: 11.5px; font-weight: 600; line-height: 1.25; }
+.sz-up { border-style: dashed; border-color: var(--line); }

@@ -370,7 +370,37 @@ async function productList(type) {
 const products = () => productList("singles");
 const bundles = () => productList("bundles");
 
-const rowsHTML = (name, rows, ph) => rows.map(r => `<div class="r${name === "size" ? " size" : ""}"><input data-${name}="0" value="${esc(r[0])}" placeholder="${ph[0]}"><input data-${name}="1" value="${esc(r[1])}" placeholder="${ph[1]}" ${name === "size" ? 'type="number" min="1"' : ""}>${name === "size" ? `<input data-size="2" value="${esc(r[2] || "")}" placeholder="Photo for this size (optional)">` : ""}<button type="button" class="b sm danger" data-rm>✕</button></div>`).join("");
+// One size row: size, price and an optional photo that shows whenever that size is selected in the shop.
+const szThumb = src => src ? `<img src="${esc(src)}" alt=""><span>Change</span>` : `<span class="none">+ Photo<small>optional</small></span>`;
+const sizeRow = r => `<div class="r size"><input data-size="0" value="${esc(r[0])}" placeholder="Size (e.g. 340g)"><input data-size="1" type="number" min="1" value="${esc(r[1])}" placeholder="Price (Rs)">
+  <div class="sz-photo"><button type="button" class="sz-btn" data-szpick title="Choose the photo shown for this size">${szThumb(r[2])}</button><input type="hidden" data-size="2" value="${esc(r[2] || "")}"></div>
+  <button type="button" class="b sm danger" data-rm>✕</button><div class="sz-panel" hidden></div></div>`;
+const rowsHTML = (name, rows, ph) => name === "size" ? rows.map(sizeRow).join("") : rows.map(r => `<div class="r"><input data-${name}="0" value="${esc(r[0])}" placeholder="${ph[0]}"><input data-${name}="1" value="${esc(r[1])}" placeholder="${ph[1]}"><button type="button" class="b sm danger" data-rm>✕</button></div>`).join("");
+
+// The photo chooser under a size row: the product's own photos, an upload, or "no special photo"
+function openSizePanel(row, form) {
+  const panel = $(".sz-panel", row), cur = $('[data-size="2"]', row).value;
+  if (!panel.hidden) { panel.hidden = true; return; }
+  $$(".sz-panel", form).forEach(x => x.hidden = true);
+  const photos = [];
+  const add = (label, src) => { if (src && !photos.some(p => p[1] === src)) photos.push([label, src]); };
+  add("Main photo", form.elements.img.value.trim());
+  $$("#gallery .r", form).forEach(g => add($('[data-gal="0"]', g).value.trim() || "Photo", $('[data-gal="1"]', g).value.trim()));
+  if (cur) add("Current", cur);
+  const size = $('[data-size="0"]', row).value.trim();
+  panel.innerHTML = `<p class="muted" style="margin:0 0 8px;font-size:12.5px">Photo to show when <b>${esc(size || "this size")}</b> is selected. If you don't pick one, the main photo is used.</p>
+    <div class="sz-grid">
+      <button type="button" class="sz-opt${cur ? "" : " on"}" data-szset=""><span class="blank">Main photo<br><small>(default)</small></span></button>
+      ${photos.map(([l, s]) => `<button type="button" class="sz-opt${s === cur ? " on" : ""}" data-szset="${esc(s)}" title="${esc(l)}"><img src="${esc(s)}" alt=""><small>${esc(l)}</small></button>`).join("")}
+      <label class="sz-opt sz-up"><span class="blank">+ Upload<br>new photo</span><input type="file" accept="image/*" class="sz-file" hidden></label>
+    </div>`;
+  panel.hidden = false;
+}
+function setSizePhoto(row, src) {
+  $('[data-size="2"]', row).value = src;
+  $(".sz-btn", row).innerHTML = szThumb(src);
+  $(".sz-panel", row).hidden = true;
+}
 const galHTML = g => g.map(([l, s]) => `<div class="r gal"><img src="${esc(s)}" alt=""><input data-gal="0" value="${esc(l)}" placeholder="Label (e.g. Nutrition)"><input data-gal="1" value="${esc(s)}" placeholder="Image path or URL"><button type="button" class="b sm danger" data-rm>✕</button></div>`).join("");
 function editProduct(p) {
   const isB = p.type === "bundles", isNew = !p.id;
@@ -416,16 +446,28 @@ function editProduct(p) {
     </form></div>`);
   const form = $("#pForm");
   form.addEventListener("click", e => {
+    const pick = e.target.closest("[data-szpick]");
+    if (pick) { openSizePanel(pick.closest(".r"), form); return; }
+    const set = e.target.closest("[data-szset]");
+    if (set) { setSizePhoto(set.closest(".r"), set.dataset.szset); return; }
     if (e.target.closest("[data-rm]")) e.target.closest(".r").remove();
     const add = e.target.closest("[data-addrow]");
     if (add) $("#" + add.dataset.addrow).insertAdjacentHTML("beforeend", add.dataset.addrow === "sizes" ? rowsHTML("size", [["", ""]], ["Size (e.g. 340g)", "Price (Rs)"]) : rowsHTML("item", [["", ""]], ["Jar name", "Size (e.g. 510g)"]));
   });
-  form.img.oninput = () => $("#imgPrev").src = form.img.value;
-  $("#imgFile").onchange = run(async e => { const f = e.target.files[0]; if (!f) return; const path = await upload(f); form.img.value = path; $("#imgPrev").src = path; toast("Photo uploaded."); });
+  // Uploading a new photo straight from a size's chooser
+  form.addEventListener("change", run(async e => {
+    const input = e.target.closest(".sz-file");
+    if (!input || !input.files[0]) return;
+    const row = input.closest(".r");
+    setSizePhoto(row, await upload(input.files[0]));
+    toast("Photo uploaded and set for this size.");
+  }));
+  form.elements.img.oninput = () => $("#imgPrev").src = form.elements.img.value;
+  $("#imgFile").onchange = run(async e => { const f = e.target.files[0]; if (!f) return; const path = await upload(f); form.elements.img.value = path; $("#imgPrev").src = path; toast("Photo uploaded."); });
   $("#galFile").onchange = run(async e => { for (const f of e.target.files) { const path = await upload(f); $("#gallery").insertAdjacentHTML("beforeend", galHTML([[f.name.replace(/\.\w+$/, "").replace(/[-_]/g, " "), path]])); } toast("Photos uploaded."); });
   form.onsubmit = run(async e => {
     e.preventDefault();
-    const f = new FormData(form), rows = (sel, k) => $(sel + " .r").map(r => { const x = [$(`[data-${k}="0"]`, r).value.trim(), $(`[data-${k}="1"]`, r).value.trim()]; const ph = $(`[data-${k}="2"]`, r); if (ph && ph.value.trim()) x.push(ph.value.trim()); return x; }).filter(r => r[0] || r[1]);
+    const f = new FormData(form), rows = (sel, k) => $$(sel + " .r").map(r => { const x = [$(`[data-${k}="0"]`, r).value.trim(), $(`[data-${k}="1"]`, r).value.trim()]; const ph = $(`[data-${k}="2"]`, r); if (ph && ph.value.trim()) x.push(ph.value.trim()); return x; }).filter(r => r[0] || r[1]);
     const data = { type: p.type, name: f.get("name"), sub: f.get("sub"), badge: f.get("badge"), desc: f.get("desc"), img: f.get("img"),
       gallery: rows("#gallery", "gal"), lids: p.lids, sizeGallery: p.sizeGallery };
     if (isB) Object.assign(data, { price: f.get("price"), onlinePrice: f.get("onlinePrice"), separate: f.get("separate"), items: rows("#items", "item"), contains: f.getAll("contains"),
