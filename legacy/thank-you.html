@@ -54,6 +54,24 @@
         ${b && b.payNote ? `<p class="muted" style="margin:8px 0 0;font-size:12.5px">${esc(b.payNote)}</p>` : ""}</div>` : `<p class="muted">Please keep <b>${fmt(d.total)}</b> ready for the rider.</p>`}
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">
         <a class="btn btn-gold" href="${wa}">Message us on WhatsApp</a><a class="btn btn-line" href="index.html">Back to the shop</a></div></div>`;
+
+    // Meta Pixel "Purchase" — once per order (a refresh of this page doesn't count it twice).
+    // The pixel itself loads a moment after the page, so wait for it.
+    const items = Array.isArray(last.items) ? last.items : [];
+    const fired = () => { try { return sessionStorage.getItem("gn-pixel-" + d.id) === "1"; } catch (e) { return false; } };
+    const firePurchase = (retries = 20) => {
+      if (fired()) return;
+      if (window.fbq) {
+        window.fbq("track", "Purchase", {
+          value: d.total, currency: "PKR", content_type: "product",
+          num_items: items.reduce((n, i) => n + (i.qty || 1), 0),
+          content_ids: items.map(i => i.id),
+          contents: items.map(i => ({ id: i.id, quantity: i.qty, item_price: i.price })),
+        }, { eventID: d.id });
+        try { sessionStorage.setItem("gn-pixel-" + d.id, "1"); } catch (e) {}
+      } else if (retries > 0) setTimeout(() => firePurchase(retries - 1), 300);
+    };
+    firePurchase();
   }
 </script>
 </body>

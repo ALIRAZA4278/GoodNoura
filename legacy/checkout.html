@@ -40,6 +40,11 @@
   .tline .free { color: var(--green); font-weight: 600; }
   .place { margin-top: 16px; height: 50px; font-size: 15px; }
   .err-box { background: rgba(232,138,107,.1); border: 1px solid rgba(232,138,107,.5); color: #f3b9a5; border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-top: 12px; }
+  .bank-co { display: none; padding: 12px 14px; border: 1px dashed var(--gold); border-radius: 10px; background: var(--bg); font-size: 13px; }
+  .bank-co div { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+  .bank-co span { color: var(--muted); }
+  .bank-co b { word-break: break-all; text-align: right; }
+  .bank-co p { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
   .empty-co { text-align: center; padding: 60px 0 90px; }
   @media (max-width: 900px) { .co { grid-template-columns: 1fr; } .summary { position: static; order: -1; } }
   @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; gap: 0; } .co h1 { font-size: 32px; } }
@@ -68,6 +73,13 @@
     return { subtotal, discount, shipping, total: subtotal - discount + shipping, codTotal };
   }
 
+  // Bank details come from Admin → Settings. Shown only while "Pay online" is selected.
+  function bankBox() {
+    const s = GN.settings, rows = [["Bank", s.bankName], ["Account title", s.accountTitle], ["Account no.", s.accountNumber], ["IBAN", s.iban]].filter(r => r[1]);
+    if (!rows.length) return "";
+    return `<div class="bank-co" id="bankBox">${rows.map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join("")}${s.payNote ? `<p>${esc(s.payNote)}</p>` : ""}</div>`;
+  }
+
   function render() {
     const lines = GN.cart();
     if (!lines.length) {
@@ -93,7 +105,8 @@
           <div class="pay">
             <label><input type="radio" name="payment" value="cod" checked><div><b>Cash on delivery</b><span>Pay when your order arrives.</span></div></label>
             <label><input type="radio" name="payment" value="online"><div><b>Pay online (bank transfer) <span class="save-tag">— save 10%</span></b>
-              <span>We'll show the account details after you place your order.</span></div></label>
+              <span>Transfer to the account below, then send us the screenshot on WhatsApp.</span></div></label>
+            ${bankBox()}
           </div>
           <div id="formErr"></div>
           <button class="add place" type="submit" id="placeBtn">Place order</button>
@@ -118,6 +131,7 @@
 
   function renderSummary() {
     const pay = payment(), t = totals();
+    const bb = document.getElementById("bankBox"); if (bb) bb.style.display = pay === "online" ? "block" : "none";
     document.getElementById("sumLines").innerHTML = GN.cart().map(l => `
       <div class="sline"><img src="${esc(l.img)}" alt=""><div><b>${l.qty} × ${esc(l.name)}</b><div class="v">${esc(l.variant || "")}</div></div>
         <b>${fmt(l.qty * (pay === "online" ? l.onlinePrice : l.price))}</b></div>`).join("");
@@ -168,9 +182,10 @@
         payment: payment(), promo: promo ? promo.code : "", cartToken: token, items: GN.cart().map(l => ({ key: l.key, qty: l.qty })) }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "We couldn't place your order.");
+      const bought = GN.cart().map(l => ({ id: l.key.split("|")[0], name: l.name, qty: l.qty, price: payment() === "online" ? l.onlinePrice : l.price }));
       GN.clearCart();
       try { localStorage.removeItem("gn-cart-token"); } catch (x) {}
-      try { sessionStorage.setItem("gn-last-order", JSON.stringify({ order: d, name: f.get("name") })); } catch (x) {}
+      try { sessionStorage.setItem("gn-last-order", JSON.stringify({ order: d, name: f.get("name"), items: bought })); } catch (x) {}
       location.href = "/thank-you";
     } catch (x) {
       err.innerHTML = `<div class="err-box">${esc(x.message === "Failed to fetch" ? "We couldn't reach the shop." : x.message)} You can also order on <a class="gold" href="${GN.WHATSAPP}">WhatsApp</a>.</div>`;
