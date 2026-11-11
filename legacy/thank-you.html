@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Thank you – Good Noura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+  .done { max-width: 620px; margin: 40px auto 80px; text-align: center; padding: 34px 28px; }
+  .done .tick { width: 64px; height: 64px; border-radius: 50%; background: var(--green); color: #14301a; display: grid; place-items: center; margin: 0 auto 14px; font-size: 32px; font-weight: 700; }
+  .done h1 { font-size: 36px; margin: 0 0 8px; }
+  .done .bank { text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 18px 0; font-size: 13.5px; }
+  .done .bank div { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+  .done .bank span { color: var(--muted); }
+  .empty-co { text-align: center; padding: 60px 0 90px; }
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<main class="wrap" id="main"></main>
+<div id="site-footer"></div>
+<script src="catalog.js"></script>
+<script src="site.js"></script>
+<script>
+  GN.init("");
+  const { fmt, esc } = GN;
+  const main = document.getElementById("main");
+
+  // The checkout page leaves the order details here just before sending the shopper to this page.
+  let last = null;
+  try { last = JSON.parse(sessionStorage.getItem("gn-last-order") || "null"); } catch (e) {}
+
+  if (!last || !last.order || !last.order.id) {
+    main.innerHTML = `<div class="empty-co"><h1 style="font-size:36px">No recent order here</h1>
+      <p class="muted">If you just placed an order, we'll message you on WhatsApp to confirm it.</p>
+      <a class="btn btn-gold" href="bundles.html">Back to the shop</a></div>`;
+  } else {
+    const d = last.order, name = last.name || "";
+    const b = d.bank, has = b && (b.accountNumber || b.iban);
+    const wa = `${GN.WHATSAPP}?text=${encodeURIComponent(`Hi Good Noura, I've placed order ${d.id} (${fmt(d.total)}).`)}`;
+    main.innerHTML = `<div class="done panel">
+      <div class="tick">✓</div>
+      <h1>Thank you${name ? ", " + esc(String(name).split(" ")[0]) : ""}!</h1>
+      <p class="muted">Your order <b class="gold">${esc(d.id)}</b> is placed. Total: <b>${fmt(d.total)}</b>.<br>
+        We'll message you on WhatsApp to confirm it.</p>
+      ${d.payment === "online" ? `<div class="bank"><b style="display:block;margin-bottom:6px">Pay by bank transfer</b>
+        ${has ? [["Bank", b.bankName], ["Account title", b.accountTitle], ["Account number", b.accountNumber], ["IBAN", b.iban]].filter(x => x[1])
+          .map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join("") : `<div><span>We'll send you the account details on WhatsApp.</span></div>`}
+        <div><span>Amount</span><b>${fmt(d.total)}</b></div>
+        ${b && b.payNote ? `<p class="muted" style="margin:8px 0 0;font-size:12.5px">${esc(b.payNote)}</p>` : ""}</div>` : `<p class="muted">Please keep <b>${fmt(d.total)}</b> ready for the rider.</p>`}
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+        <a class="btn btn-gold" href="${wa}">Message us on WhatsApp</a><a class="btn btn-line" href="index.html">Back to the shop</a></div></div>`;
+  }
+</script>
+</body>
+</html>

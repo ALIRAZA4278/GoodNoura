@@ -1,4 +1,4 @@
-const pages = ["bundles", "product", "checkout", "contact", "make-your-own-bundle", "our-story"];
+const pages = ["bundles", "product", "checkout", "contact", "make-your-own-bundle", "our-story", "thank-you"];
 
 /** @type {import('next').NextConfig} */
 export default {
