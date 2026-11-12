@@ -1,3 +1,4 @@
+import { sendStatusEmail } from "@/lib/email";
 import {
   Bad, IMAGE_BUCKET, STATUSES, allProductRows, checkPass, cleanProduct, clearedCookie, cookieOf, csvCell, emailOk, getSettings, handle, hashPass, isAdmin, json,
   newSessionCookie, now, productRow, publicSettings, q, readJSON, sb, setSetting, slug, str, withoutPrivate,
@@ -9,11 +10,24 @@ let failed = { n: 0, until: 0 };   // slows down password guessing (per server i
 
 const orderById = id => q(sb().from("orders").select("*").eq("id", id).maybeSingle());
 
-async function setStatus(id, status) {
-  const o = await q(sb().from("orders").select("status, timeline").eq("id", id).maybeSingle());
-  if (!o || o.status === status) return;
+// Changes an order's status, then emails the customer about it (if they gave an email). Returns what happened with the email:
+// "sent", "no-email", "skipped" (email not set up on the server), "failed", or null when the status was already that.
+async function setStatus(id, status, settings) {
+  const o = await orderById(id);
+  if (!o || o.status === status) return null;
   const timeline = [...(o.timeline || []), { at: now(), text: `Status changed: ${o.status} → ${status}` }];
   await q(sb().from("orders").update({ status, timeline }).eq("id", id));
+  const result = await sendStatusEmail({ ...o, status }, status, settings);
+  const note = { sent: `Status email sent to ${o.email}`, failed: `Status email to ${o.email} FAILED`, skipped: "Status email skipped (email isn't set up on the server)", "no-email": "No email on this order, so no status email was sent" }[result];
+  if (note) await q(sb().from("orders").update({ timeline: [...timeline, { at: now(), text: note }] }).eq("id", id));
+  return result;
+}
+
+// Runs `fn` over `list` a few at a time (so a bulk status change doesn't open dozens of mail connections at once)
+async function inBatches(list, size, fn) {
+  const out = [];
+  for (let i = 0; i < list.length; i += size) out.push(...await Promise.all(list.slice(i, i + size).map(fn)));
+  return out;
 }
 
 async function admin(req, ctx) {
@@ -75,8 +89,10 @@ async function admin(req, ctx) {
   if (route === "POST orders/bulk") {
     const { ids, status } = await readJSON(req);
     if (!STATUSES.includes(status) || !Array.isArray(ids)) throw new Bad("Bad request.");
-    for (const id of ids) await setStatus(String(id), status);
-    return json({ ok: true });
+    const pub = withoutPrivate(settings);
+    const results = await inBatches(ids.slice(0, 200), 4, id => setStatus(String(id), status, pub));
+    const count = k => results.filter(r => r === k).length;
+    return json({ ok: true, changed: results.filter(r => r !== null).length, emailed: count("sent"), noEmail: count("no-email"), emailFailed: count("failed") + count("skipped") });
   }
   if ((m = p.match(/^orders\/([\w-]+)$/))) {
     const o = await orderById(m[1]);
@@ -84,7 +100,8 @@ async function admin(req, ctx) {
     if (req.method === "DELETE") { await q(sb().from("orders").delete().eq("id", o.id)); return json({ ok: true }); }
     if (req.method === "PATCH") {
       const b = await readJSON(req);
-      if (b.status) { if (!STATUSES.includes(b.status)) throw new Bad("Unknown status."); await setStatus(o.id, b.status); }
+      let emailStatus = null;
+      if (b.status) { if (!STATUSES.includes(b.status)) throw new Bad("Unknown status."); emailStatus = await setStatus(o.id, b.status, withoutPrivate(settings)); }
       const fresh = await orderById(o.id);
       const upd = {};
       if (b.note) upd.notes = [...(fresh.notes || []), { at: now(), text: str(b.note, 1000) }];
@@ -97,7 +114,7 @@ async function admin(req, ctx) {
       if (b.event) timeline.push({ at: now(), text: str(b.event, 200) });
       if (timeline.length !== (fresh.timeline || []).length) upd.timeline = timeline;
       if (Object.keys(upd).length) await q(sb().from("orders").update(upd).eq("id", o.id));
-      return json(await orderById(o.id));
+      return json({ ...(await orderById(o.id)), emailStatus });
     }
   }
 

@@ -236,21 +236,28 @@ function renderBulk() {
   $("#bulkClear").onclick = () => { selected.clear(); renderOrderList(); };
   $("#bulkApply").onclick = run(async () => {
     const status = $("#bulkStatus").value; if (!status) return toast("Pick a status first.", true);
-    await api("orders/bulk", { method: "POST", body: { ids: [...selected], status } });
-    toast(`${selected.size} orders marked ${status}.`); selected.clear(); orders();
+    const r = await api("orders/bulk", { method: "POST", body: { ids: [...selected], status } });
+    toast(`${selected.size} orders marked ${status}. ${r.emailed} emailed${r.noEmail ? `, ${r.noEmail} had no email` : ""}${r.emailFailed ? `, ${r.emailFailed} email(s) didn't go` : ""}.`); selected.clear(); orders();
   });
 }
 
+// WhatsApp messages, one per status (same layout as the Secret Hour admin): greeting, what happened, order details, sign-off.
+const PAID_STATUSES = ["Shipped", "Out for Delivery", "Attempt", "Delivered", "Returned"];
+const waItems = o => o.items.map(l => `• ${l.name}${l.variant ? ` (${l.variant})` : ""} x${l.qty} — ${fmt(l.qty * (o.payment === "online" ? l.onlinePrice : l.price))}`).join("\n");
+const waDetails = o => `\n\nOrder Details:\n${waItems(o)}\n\n${o.shipping ? `Delivery: ${fmt(o.shipping)}\n` : ""}Total: ${fmt(o.total)}${o.payment === "online" ? (PAID_STATUSES.includes(o.status) ? " (PAID online)" : " (online payment, bank transfer)") : " (Cash on delivery)"}`;
+const waWrap = (o, text, details = true) => `Assalam o Alaikum ${o.name}!\n\n${text}${details ? waDetails(o) : ""}\n\nThank you!\nGood Noura`;
 const WA_TEXT = {
-  Pending: o => `Hi ${o.name}, thank you for your Good Noura order ${o.id} (${fmt(o.total)}). Please reply YES to confirm it.`,
-  Confirmed: o => `Hi ${o.name}, your Good Noura order ${o.id} is confirmed! We'll send it out soon.`,
-  Shipped: o => `Hi ${o.name}, your Good Noura order ${o.id} has been shipped and is on its way to you.`,
-  "Out for Delivery": o => `Hi ${o.name}, your Good Noura order ${o.id} is out for delivery today.${o.payment === "cod" ? ` Please keep ${fmt(o.total)} ready.` : ""}`,
-  Attempt: o => `Hi ${o.name}, our rider tried to deliver your Good Noura order ${o.id} but couldn't reach you. When is a good time?`,
-  Delivered: o => `Hi ${o.name}, your Good Noura order ${o.id} has been delivered. Enjoy! We'd love to hear what you think.`,
-  Cancelled: o => `Hi ${o.name}, your Good Noura order ${o.id} has been cancelled. Message us if this is a mistake.`,
-  Returned: o => `Hi ${o.name}, your Good Noura order ${o.id} came back to us. Would you like us to send it again?`,
+  Pending: o => waWrap(o, `We have received your Good Noura order *${o.id}*. Please reply YES to confirm that you placed this order.`),
+  Confirmed: o => waWrap(o, `Great news! Your Good Noura order *${o.id}* has been confirmed. We are getting your jars ready.`),
+  Shipped: o => waWrap(o, `Your Good Noura order *${o.id}* has been shipped! Karachi orders arrive in 24–48 hrs, other cities in 4–6 days.`),
+  "Out for Delivery": o => waWrap(o, `Your Good Noura order *${o.id}* is out for delivery today! Our rider is on the way to you.${o.payment === "online" ? "" : ` Please keep ${fmt(o.total)} ready.`}`),
+  Attempt: o => waWrap(o, `We tried to deliver your Good Noura order *${o.id}* but couldn't reach you. Please tell us a good time and we'll deliver it again.`),
+  Delivered: o => waWrap(o, `Your Good Noura order *${o.id}* has been delivered! We hope you love it.\n\nWe would love to hear your feedback!`, false),
+  Cancelled: o => waWrap(o, `Unfortunately, your Good Noura order *${o.id}* has been cancelled. Please message us if you have any questions or if this is a mistake.`),
+  Returned: o => waWrap(o, `Your Good Noura order *${o.id}* has come back to us because the delivery couldn't be completed. Would you like us to send it again?`),
 };
+// What happened with the customer's status email, in words for the toast
+const emailNote = r => ({ sent: " Email sent to the customer.", "no-email": " (No email on this order, so no email was sent.)", skipped: " (Email isn't set up on the server, so none was sent.)", failed: " (The email to the customer failed.)" }[r] || "");
 async function openOrder(id, editing = false) {
   let o = state.orders.find(x => x.id === id);
   if (!o) { state.orders = await api("orders"); o = state.orders.find(x => x.id === id); }
@@ -278,7 +285,7 @@ async function openOrder(id, editing = false) {
           <div class="tot big"><span>Total · ${o.payment === "online" ? "Paid online (bank transfer)" : "Cash on delivery"}</span><span>${fmt(o.total)}</span></div></div></div>
       <div class="card sec"><h3>Update status</h3><div class="status-grid">${STATUSES.map(s => `<button data-status="${s}" aria-pressed="${s === o.status}">${s}</button>`).join("")}</div>
         <p style="margin:12px 0 0"><a class="b wa" id="waBtn" target="_blank" rel="noopener" href="${waLink(o.phone, WA_TEXT[o.status](o))}">💬 Send WhatsApp update</a>
-        <span class="muted" style="font-size:12px;margin-left:6px">Opens WhatsApp with a message for "${esc(o.status)}"</span></p></div>
+        <span class="muted" style="font-size:12px;margin-left:6px">Opens WhatsApp for ${esc(o.phone)} with the "${esc(o.status)}" message.${o.email ? " The customer also gets an email whenever you change the status." : ""}</span></p></div>
       <div class="card sec"><h3>Notes</h3><div style="display:grid;gap:8px">${o.notes.map(n => `<div class="note"><time>${when(n.at)}</time>${esc(n.text)}</div>`).join("") || `<p class="muted" style="margin:0">No notes yet.</p>`}</div>
         <form id="noteForm" style="display:grid;gap:8px;margin-top:10px"><textarea name="note" placeholder="e.g. Called customer, order confirmed" style="min-height:60px"></textarea>
           <button class="b" type="submit" style="justify-self:start">+ Add note</button></form></div>
@@ -292,7 +299,11 @@ async function openOrder(id, editing = false) {
     if (i >= 0) state.orders[i] = u; else state.orders.unshift(u);
     return u;
   };
-  $$("[data-status]").forEach(b => b.onclick = run(async () => { await update({ status: b.dataset.status }); toast(`${o.id} marked ${b.dataset.status}.`); openOrder(o.id); afterOrderChange(); }));
+  $$("[data-status]").forEach(b => b.onclick = run(async () => {
+    const u = await update({ status: b.dataset.status });
+    toast(`${o.id} marked ${b.dataset.status}.${emailNote(u.emailStatus)} Use the green button to message them on WhatsApp.`);
+    openOrder(o.id); afterOrderChange();
+  }));
   $("#waBtn").onclick = () => update({ event: `WhatsApp update sent (${o.status})` }).then(() => openOrder(o.id)).catch(() => {});
   $("#noteForm").onsubmit = run(async e => { e.preventDefault(); const note = new FormData(e.target).get("note").trim(); if (!note) return; await update({ note }); openOrder(o.id); afterOrderChange(); });
   $("#delOrder").onclick = run(async () => {
