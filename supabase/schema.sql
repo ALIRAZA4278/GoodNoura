@@ -21,3 +21,6 @@ alter table sessions enable row level security;
 
 -- Public bucket for product photos uploaded from the admin
 insert into storage.buckets (id, name, public) values ('product-images', 'product-images', true) on conflict (id) do nothing;
+
+-- Insta World courier: the tracking number of a booked parcel (added later; safe to run again)
+alter table orders add column if not exists instaworld_tracking text;

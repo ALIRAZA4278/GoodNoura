@@ -1,4 +1,5 @@
 import { sendStatusEmail } from "@/lib/email";
+import { bulkCsv, buildShipment, cancelShipment, createShipment, fetchAwb, getCities, matchCity, trackShipment } from "@/lib/instaworld";
 import {
   Bad, IMAGE_BUCKET, STATUSES, allProductRows, checkPass, cleanProduct, clearedCookie, cookieOf, csvCell, emailOk, getSettings, handle, hashPass, isAdmin, json,
   newSessionCookie, now, productRow, publicSettings, q, readJSON, sb, setSetting, slug, str, withoutPrivate,
@@ -94,6 +95,53 @@ async function admin(req, ctx) {
     const count = k => results.filter(r => r === k).length;
     return json({ ok: true, changed: results.filter(r => r !== null).length, emailed: count("sent"), noEmail: count("no-email"), emailFailed: count("failed") + count("skipped") });
   }
+  // Insta World courier (book / track / cancel / airway bill / bulk file). The API key stays on the server.
+  if (route === "GET instaworld/cities") return json({ cities: await getCities() });
+  if (route === "GET instaworld.csv") {
+    const ids = (url.searchParams.get("ids") || "").split(",").filter(Boolean);
+    const all = await q(sb().from("orders").select("*").order("created_at", { ascending: false }));
+    const rows = all.filter(o => !ids.length || ids.includes(o.id));
+    return new Response(bulkCsv(rows, await getCities().catch(() => [])), { headers: { "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="goodnoura-instaworld-shipments-${now().slice(0, 10)}.csv"`, "Cache-Control": "no-store" } });
+  }
+  if ((m = p.match(/^orders\/([\w-]+)\/instaworld\/awb$/)) && req.method === "GET") {
+    const o = await orderById(m[1]);
+    if (!o) throw new Bad("Order not found.", 404);
+    if (!o.instaworld_tracking) throw new Bad("This order isn't booked on Insta World.", 404);
+    return fetchAwb(o.instaworld_tracking);
+  }
+  if ((m = p.match(/^orders\/([\w-]+)\/instaworld$/)) && req.method === "POST") {
+    const b = await readJSON(req);
+    const o = await orderById(m[1]);
+    if (!o) throw new Bad("Order not found.", 404);
+    // Check the database is ready BEFORE talking to the courier, so we never book a parcel we can't record.
+    if (!("instaworld_tracking" in o)) throw new Bad("One-time setup needed: open Supabase → SQL Editor and run:  alter table orders add column if not exists instaworld_tracking text;", 500);
+    const log = (text, extra = {}) => q(sb().from("orders").update({ ...extra, timeline: [...(o.timeline || []), { at: now(), text }] }).eq("id", o.id));
+
+    if (b.action === "book") {
+      if (o.instaworld_tracking) throw new Bad(`Already booked on Insta World: ${o.instaworld_tracking}`, 409);
+      const asked = str(b.city, 60) || o.city;
+      const city = matchCity(asked, await getCities());
+      if (!city) return json({ error: `Insta World doesn't recognise the city "${asked}". Pick the right city from the list.`, needCity: true }, 422);
+      const tracking = await createShipment(buildShipment(o, city));
+      try { await log(`Booked on Insta World — Tracking: ${tracking}`, { instaworld_tracking: tracking }); }
+      catch (e) { throw new Bad(`Booked on Insta World (tracking ${tracking}) but saving it failed: ${e.message}. Write the number down.`, 500); }
+      return json(await orderById(o.id));
+    }
+    if (!o.instaworld_tracking) throw new Bad("This order isn't booked on Insta World.", 409);
+    if (b.action === "track") return json({ tracking: o.instaworld_tracking, result: await trackShipment(o.instaworld_tracking) });
+    if (b.action === "cancel") {
+      await cancelShipment(o.instaworld_tracking);
+      await log(`Insta World shipment cancelled: ${o.instaworld_tracking}`, { instaworld_tracking: null });
+      return json(await orderById(o.id));
+    }
+    if (b.action === "unlink") {   // for a parcel Insta World no longer knows (already cancelled there): just forget the number here
+      await log(`Insta World tracking removed from this order: ${o.instaworld_tracking}`, { instaworld_tracking: null });
+      return json(await orderById(o.id));
+    }
+    throw new Bad("Unknown action.");
+  }
+
   if ((m = p.match(/^orders\/([\w-]+)$/))) {
     const o = await orderById(m[1]);
     if (!o) throw new Bad("Order not found.", 404);

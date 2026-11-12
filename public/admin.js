@@ -183,7 +183,7 @@ async function orders() {
   const delivered = all.filter(o => o.status === "Delivered").length, returned = all.filter(o => o.status === "Returned").length;
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Orders</h1><p>Every order placed on the website.</p></div>
-      <div class="actions"><a class="b" href="/api/admin/orders.csv" download>⬇ Export all (CSV)</a><button class="b" id="refresh">↻ Refresh</button></div></div>
+      <div class="actions"><a class="b" href="/api/admin/orders.csv" download>⬇ Export all (CSV)</a><button class="b" id="iwCsv" title="Bulk upload file for Insta World (selected orders, or everything shown)">⬇ Insta World CSV</button><button class="b" id="refresh">↻ Refresh</button></div></div>
     <div class="stats">
       <div class="card stat"><span>Total orders</span><b>${all.length}</b></div>
       <div class="card stat"><span>Revenue</span><b>${fmt(revenue)}</b><small>Excludes cancelled &amp; returned</small></div>
@@ -195,6 +195,7 @@ async function orders() {
     <div id="bulk"></div>
     <div class="card table-wrap" id="olist"></div>`;
   $("#refresh").onclick = () => go("Orders");
+  $("#iwCsv").onclick = iwCsv;
   $("#oq").oninput = e => { oq = e.target.value; renderOrderList(); };
   $("#ostatus").onchange = e => { ostatus = e.target.value; renderOrderList(); };
   renderOrderList();
@@ -213,7 +214,7 @@ function renderOrderList() {
     ${list.map(o => `<tr class="click" data-id="${esc(o.id)}">
       <td><input type="checkbox" data-sel="${esc(o.id)}" ${selected.has(o.id) ? "checked" : ""} aria-label="Select ${esc(o.id)}"></td>
       <td class="oid">${esc(o.id)}</td>
-      <td>${esc(o.name)}<div class="sub">${esc(o.city)} · ${esc(o.phone)}</div>${o.notes.length ? `<div class="note-preview">📝 ${esc(o.notes[o.notes.length - 1].text.slice(0, 80))}</div>` : ""}</td>
+      <td>${esc(o.name)}<div class="sub">${esc(o.city)} · ${esc(o.phone)}</div>${o.instaworld_tracking ? `<div class="sub">📦 ${esc(o.instaworld_tracking)}</div>` : ""}${o.notes.length ? `<div class="note-preview">📝 ${esc(o.notes[o.notes.length - 1].text.slice(0, 80))}</div>` : ""}</td>
       <td class="hide-sm sub">${o.items.map(l => `${l.qty}× ${esc(l.name)}`).join("<br>")}</td>
       <td>${pill(o.status)}</td>
       <td class="num"><b>${fmt(o.total)}</b><div><span class="pill ${o.payment}">${o.payment === "online" ? "Online" : "COD"}</span></div></td>
@@ -231,9 +232,11 @@ function renderBulk() {
     <select id="bulkStatus"><option value="">Change status to…</option>${STATUSES.map(s => `<option>${s}</option>`).join("")}</select>
     <button class="b sm gold" id="bulkApply">Apply</button>
     <a class="b sm" href="/api/admin/orders.csv?ids=${encodeURIComponent([...selected].join(","))}" download>⬇ Export selected</a>
+    <button class="b sm" id="bulkIw">⬇ Insta World CSV</button>
     <button class="b sm" id="bulkClear">Clear</button></div>` : "";
   if (!selected.size) return;
   $("#bulkClear").onclick = () => { selected.clear(); renderOrderList(); };
+  $("#bulkIw").onclick = iwCsv;
   $("#bulkApply").onclick = run(async () => {
     const status = $("#bulkStatus").value; if (!status) return toast("Pick a status first.", true);
     const r = await api("orders/bulk", { method: "POST", body: { ids: [...selected], status } });
@@ -245,12 +248,13 @@ function renderBulk() {
 const PAID_STATUSES = ["Shipped", "Out for Delivery", "Attempt", "Delivered", "Returned"];
 const waItems = o => o.items.map(l => `• ${l.name}${l.variant ? ` (${l.variant})` : ""} x${l.qty} — ${fmt(l.qty * (o.payment === "online" ? l.onlinePrice : l.price))}`).join("\n");
 const waDetails = o => `\n\nOrder Details:\n${waItems(o)}\n\n${o.shipping ? `Delivery: ${fmt(o.shipping)}\n` : ""}Total: ${fmt(o.total)}${o.payment === "online" ? (PAID_STATUSES.includes(o.status) ? " (PAID online)" : " (online payment, bank transfer)") : " (Cash on delivery)"}`;
+const waTrack = o => (o.instaworld_tracking ? `\n\nCourier: Insta World\nTracking number: *${o.instaworld_tracking}*` : "");
 const waWrap = (o, text, details = true) => `Assalam o Alaikum ${o.name}!\n\n${text}${details ? waDetails(o) : ""}\n\nThank you!\nGood Noura`;
 const WA_TEXT = {
   Pending: o => waWrap(o, `We have received your Good Noura order *${o.id}*. Please reply YES to confirm that you placed this order.`),
   Confirmed: o => waWrap(o, `Great news! Your Good Noura order *${o.id}* has been confirmed. We are getting your jars ready.`),
-  Shipped: o => waWrap(o, `Your Good Noura order *${o.id}* has been shipped! Karachi orders arrive in 24–48 hrs, other cities in 4–6 days.`),
-  "Out for Delivery": o => waWrap(o, `Your Good Noura order *${o.id}* is out for delivery today! Our rider is on the way to you.${o.payment === "online" ? "" : ` Please keep ${fmt(o.total)} ready.`}`),
+  Shipped: o => waWrap(o, `Your Good Noura order *${o.id}* has been shipped! Karachi orders arrive in 24–48 hrs, other cities in 4–6 days.${waTrack(o)}`),
+  "Out for Delivery": o => waWrap(o, `Your Good Noura order *${o.id}* is out for delivery today! Our rider is on the way to you.${o.payment === "online" ? "" : ` Please keep ${fmt(o.total)} ready.`}${waTrack(o)}`),
   Attempt: o => waWrap(o, `We tried to deliver your Good Noura order *${o.id}* but couldn't reach you. Please tell us a good time and we'll deliver it again.`),
   Delivered: o => waWrap(o, `Your Good Noura order *${o.id}* has been delivered! We hope you love it.\n\nWe would love to hear your feedback!`, false),
   Cancelled: o => waWrap(o, `Unfortunately, your Good Noura order *${o.id}* has been cancelled. Please message us if you have any questions or if this is a mistake.`),
@@ -258,6 +262,47 @@ const WA_TEXT = {
 };
 // What happened with the customer's status email, in words for the toast
 const emailNote = r => ({ sent: " Email sent to the customer.", "no-email": " (No email on this order, so no email was sent.)", skipped: " (Email isn't set up on the server, so none was sent.)", failed: " (The email to the customer failed.)" }[r] || "");
+// ---------- Insta World courier ----------
+// Insta World only accepts its own spelling of a city, so we offer its list as suggestions.
+async function iwCities() {
+  if (!state.iwCities) { try { state.iwCities = (await api("instaworld/cities")).cities; } catch (e) { state.iwCities = null; return []; } }
+  return state.iwCities;
+}
+const iwDatalist = () => `<datalist id="iwCities">${(state.iwCities || []).map(c => `<option value="${esc(c)}">`).join("")}</datalist>`;
+// Bulk upload file for Insta World: the selected orders, or everything the list currently shows
+function iwCsv() {
+  const ids = selected.size ? [...selected] : filteredOrders().map(o => o.id);
+  if (!ids.length) return toast("There are no orders to export.", true);
+  const a = document.createElement("a");
+  a.href = "/api/admin/instaworld.csv?ids=" + encodeURIComponent(ids.join(",")); a.download = "";
+  document.body.appendChild(a); a.click(); a.remove();
+}
+const iwNice = k => k.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
+// Insta World's tracking answer can come in any shape, so show whatever it sent as simple "label: value" rows
+function iwSummary(r) {
+  const rows = [];
+  const walk = (v, label) => {
+    if (v === null || v === undefined || v === "") return;
+    if (typeof v !== "object") rows.push([label, String(v)]);
+    else if (Array.isArray(v)) v.forEach((x, i) => walk(x, label ? `${label} ${i + 1}` : `#${i + 1}`));
+    else Object.entries(v).forEach(([k, x]) => walk(x, label ? `${label} · ${iwNice(k)}` : iwNice(k)));
+  };
+  walk(r, "");
+  return rows.slice(0, 40);
+}
+function iwCard(o) {
+  return `<div class="card sec" id="iwCard"><h3>Courier · Insta World</h3>${o.instaworld_tracking ? `
+      <div class="kv"><span>Tracking no.</span><b class="mono">${esc(o.instaworld_tracking)}</b></div>
+      <div class="actions" style="margin-top:10px"><button class="b sm" id="iwTrack">Track</button>
+        <a class="b sm" href="/api/admin/orders/${encodeURIComponent(o.id)}/instaworld/awb" target="_blank" rel="noopener">Download AWB</a>
+        <button class="b sm danger" id="iwCancel">Cancel shipment</button></div>
+      <div id="iwOut"></div>` : `
+      <label style="display:grid;gap:5px;font-size:12.5px;font-weight:600">Deliver to city <small style="font-weight:400;color:var(--muted)">(Insta World's spelling: start typing and pick from the list)</small>
+        <input id="iwCity" list="iwCities" value="${esc(o.city)}" autocomplete="off"></label>
+      <p style="margin:10px 0 0"><button class="b primary" id="iwBook">📦 Book on Insta World</button>
+        <span class="muted" style="font-size:12px;margin-left:6px">${o.payment === "online" ? "Marked as paid, nothing to collect." : `Rider collects ${fmt(o.total)}.`}</span></p>
+      <div id="iwOut"></div>`}</div>`;
+}
 async function openOrder(id, editing = false) {
   let o = state.orders.find(x => x.id === id);
   if (!o) { state.orders = await api("orders"); o = state.orders.find(x => x.id === id); }
@@ -269,7 +314,7 @@ async function openOrder(id, editing = false) {
         ${editing ? `<form class="form" id="custForm">
           <label>Name<input name="name" value="${esc(o.name)}" required></label>
           <div class="row"><label>WhatsApp<input name="phone" value="${esc(o.phone)}" required></label><label>Email<input name="email" value="${esc(o.email)}"></label></div>
-          <label>Address<textarea name="address">${esc(o.address)}</textarea></label><label>City<input name="city" value="${esc(o.city)}"></label>
+          <label>Address<textarea name="address">${esc(o.address)}</textarea></label><label>City <small>(pick Insta World's spelling)</small><input name="city" value="${esc(o.city)}" list="iwCities" autocomplete="off"></label>
           <div class="actions"><button class="b primary" type="submit">Save</button><button class="b" type="button" id="cancelEdit">Cancel</button></div></form>`
         : `<div class="kv"><span>Name</span><b>${esc(o.name)}</b><span>WhatsApp</span><a href="${waLink(o.phone, "")}" target="_blank" rel="noopener">${esc(o.phone)}</a>
           <span>Email</span><span style="color:inherit">${o.email ? `<a href="mailto:${esc(o.email)}">${esc(o.email)}</a>` : "—"}</span>
@@ -286,6 +331,7 @@ async function openOrder(id, editing = false) {
       <div class="card sec"><h3>Update status</h3><div class="status-grid">${STATUSES.map(s => `<button data-status="${s}" aria-pressed="${s === o.status}">${s}</button>`).join("")}</div>
         <p style="margin:12px 0 0"><a class="b wa" id="waBtn" target="_blank" rel="noopener" href="${waLink(o.phone, WA_TEXT[o.status](o))}">💬 Send WhatsApp update</a>
         <span class="muted" style="font-size:12px;margin-left:6px">Opens WhatsApp for ${esc(o.phone)} with the "${esc(o.status)}" message.${o.email ? " The customer also gets an email whenever you change the status." : ""}</span></p></div>
+      ${iwCard(o)}${iwDatalist()}
       <div class="card sec"><h3>Notes</h3><div style="display:grid;gap:8px">${o.notes.map(n => `<div class="note"><time>${when(n.at)}</time>${esc(n.text)}</div>`).join("") || `<p class="muted" style="margin:0">No notes yet.</p>`}</div>
         <form id="noteForm" style="display:grid;gap:8px;margin-top:10px"><textarea name="note" placeholder="e.g. Called customer, order confirmed" style="min-height:60px"></textarea>
           <button class="b" type="submit" style="justify-self:start">+ Add note</button></form></div>
@@ -305,6 +351,37 @@ async function openOrder(id, editing = false) {
     openOrder(o.id); afterOrderChange();
   }));
   $("#waBtn").onclick = () => update({ event: `WhatsApp update sent (${o.status})` }).then(() => openOrder(o.id)).catch(() => {});
+  // Insta World: book / track / download AWB / cancel
+  iwCities().then(list => { const dl = $("#iwCities"); if (dl && !dl.children.length) dl.innerHTML = list.map(c => `<option value="${esc(c)}">`).join(""); });
+  const iwOut = (html, err) => { const el = $("#iwOut"); if (el) el.innerHTML = html ? `<div class="iw-out${err ? " err" : ""}">${html}</div>` : ""; };
+  const adopt = u => { Object.assign(o, u); const i = state.orders.findIndex(x => x.id === u.id); if (i >= 0) state.orders[i] = u; else state.orders.unshift(u); };
+  const iwPost = (action, extra = {}) => api(`orders/${encodeURIComponent(o.id)}/instaworld`, { method: "POST", body: { action, ...extra } });
+  if ($("#iwBook")) $("#iwBook").onclick = async () => {
+    const btn = $("#iwBook"); btn.disabled = true; btn.textContent = "Booking…"; iwOut("");
+    try {
+      adopt(await iwPost("book", { city: $("#iwCity").value.trim() }));
+      toast(`Booked on Insta World. Tracking: ${o.instaworld_tracking}`);
+      openOrder(o.id); afterOrderChange();
+    } catch (e) { btn.disabled = false; btn.textContent = "📦 Book on Insta World"; iwOut(esc(e.message), true); }
+  };
+  if ($("#iwTrack")) $("#iwTrack").onclick = async () => {
+    const btn = $("#iwTrack"); btn.disabled = true; btn.textContent = "Tracking…"; iwOut("");
+    try {
+      const r = await iwPost("track"), rows = iwSummary(r.result);
+      iwOut(rows.length ? `<div class="kv">${rows.map(([k, v]) => `<span>${esc(k)}</span><b style="font-weight:600">${esc(v)}</b>`).join("")}</div>` : "Insta World has no updates for this parcel yet.");
+    } catch (e) { iwOut(esc(e.message), true); }
+    btn.disabled = false; btn.textContent = "Track";
+  };
+  if ($("#iwCancel")) $("#iwCancel").onclick = async () => {
+    if (!confirm(`Cancel Insta World shipment ${o.instaworld_tracking}?`)) return;
+    const btn = $("#iwCancel"); btn.disabled = true; btn.textContent = "Cancelling…"; iwOut("");
+    try { adopt(await iwPost("cancel")); toast("Insta World shipment cancelled."); openOrder(o.id); afterOrderChange(); }
+    catch (e) {
+      btn.disabled = false; btn.textContent = "Cancel shipment";
+      iwOut(`${esc(e.message)}<p style="margin:8px 0 0"><button class="b sm" id="iwUnlink">Remove the tracking number from this order only</button></p><small>Use this if Insta World already cancelled it or doesn't know it.</small>`, true);
+      $("#iwUnlink").onclick = run(async () => { if (!confirm("Remove the tracking number from this order? (Insta World isn't told.)")) return; adopt(await iwPost("unlink")); toast("Tracking number removed."); openOrder(o.id); afterOrderChange(); });
+    }
+  };
   $("#noteForm").onsubmit = run(async e => { e.preventDefault(); const note = new FormData(e.target).get("note").trim(); if (!note) return; await update({ note }); openOrder(o.id); afterOrderChange(); });
   $("#delOrder").onclick = run(async () => {
     if (!confirm(`Delete order ${o.id} for ${o.name}? This can't be undone.`)) return;
