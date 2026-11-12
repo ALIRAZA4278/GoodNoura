@@ -32,7 +32,7 @@ git pull && npm ci && npm run build && pm2 restart goodnoura
 nginx proxies goodnoura.com to the app's port (see the pm2 start command in your notes); HTTPS comes from certbot.
 
 ## Netlify copy
-The repository also builds on Netlify, but Netlify's automatic GitHub builds do not run the Next.js server correctly for this project, so automatic builds are switched off. To update the Netlify copy by hand: `npx netlify-cli deploy --build --prod`. The Netlify copy has no email or courier variables unless you add them in Netlify → Environment variables.
+The repository also builds on Netlify, but Netlify's automatic GitHub builds do not run the Next.js server correctly for this project (every page turns into a 404). Switch them off: Netlify → Site configuration → Build & deploy → Build settings → **Stop builds**. Then update the Netlify copy by hand with `npx netlify-cli deploy --build --prod` (this works). The Netlify copy has no email or courier variables unless you add them in Netlify → Environment variables.
 
 ## Layout
 - `legacy/*.html`, `public/site.js`, `public/admin.js`, `public/*.css`: the pages and their scripts (design unchanged).
