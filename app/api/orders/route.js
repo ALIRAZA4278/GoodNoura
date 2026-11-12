@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import { after } from "next/server";
+import { allow, clientIp } from "@/lib/ratelimit";
 import { notifyOrder } from "@/lib/email";
 import { activePromo, Bad, handle, json, now, priceItems, publicSettings, q, readJSON, sb, shopProducts, str, totals } from "@/lib/server";
 
@@ -12,6 +14,8 @@ async function newOrderId() {
 }
 
 export const POST = handle(async req => {
+  // 8 orders per 10 minutes from one connection is generous for a family and stops a bot
+  if (!allow("order:" + clientIp(req), 8, 10 * 60e3)) throw new Bad("Too many orders from this connection. Please wait a few minutes, or order on WhatsApp.", 429);
   const b = await readJSON(req);
   const o = { name: str(b.name, 80), phone: str(b.phone, 30), email: str(b.email, 120), address: str(b.address, 300), city: str(b.city, 60) };
   if (!o.name || !o.address || !o.city) throw new Bad("Please fill in your name, address and city.");
@@ -28,8 +32,9 @@ export const POST = handle(async req => {
   }));
   if (promo) await q(sb().from("promos").update({ uses: (promo.uses || 0) + 1 }).eq("code", promo.code));
   if (b.cartToken) await q(sb().from("carts").delete().eq("token", str(b.cartToken, 64)));
-  // Email the shop (always) and the customer (if they gave an email). Failures are logged, never shown to the shopper.
-  await notifyOrder({ id, ...o, payment, items: lines, subtotal: t.subtotal, discount: t.discount, promo: promo ? promo.code : "", shipping: t.shipping, total: t.total }, s);
+  // The emails go out right AFTER the shopper gets their answer, so checkout stays fast. Failures are logged, never shown to them.
+  const placed = { id, ...o, payment, items: lines, subtotal: t.subtotal, discount: t.discount, promo: promo ? promo.code : "", shipping: t.shipping, total: t.total };
+  after(async () => { await notifyOrder(placed, s); });
   return json({
     id, total: t.total, shipping: t.shipping, payment,
     bank: payment === "online" ? { bankName: s.bankName, accountTitle: s.accountTitle, accountNumber: s.accountNumber, iban: s.iban, payNote: s.payNote } : null,

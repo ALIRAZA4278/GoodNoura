@@ -122,7 +122,7 @@ const GN = (() => {
         <div><h4>Quick links</h4><ul>
           <li><a href="/bundles">Shop all</a></li><li><a href="/make-your-own-bundle">Make Your Own Bundle</a></li>
           <li><a href="/our-story">Our Story</a></li><li><a href="/contact">Contact Us</a></li>
-          <li><a href="https://goodnoura.com/pages/privacy-policy">Privacy Policy</a></li><li><a href="https://goodnoura.com/pages/terms-and-conditions">Terms and Conditions</a></li></ul></div>
+          <li><a href="/privacy-policy">Privacy Policy</a></li><li><a href="/terms-and-conditions">Terms and Conditions</a></li></ul></div>
         <div><h4>Contact us</h4><ul>
           <li>Phone / WhatsApp: <a href="${TEL}">${PHONE}</a></li>
           <li>Email: <a href="mailto:${EMAIL}">${EMAIL}</a></li>

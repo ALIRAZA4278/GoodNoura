@@ -1,9 +1,11 @@
 import { Bad, handle, json, now, priceItems, publicSettings, q, readJSON, sb, shopProducts, str, totals } from "@/lib/server";
+import { allow, clientIp } from "@/lib/ratelimit";
 
 export const dynamic = "force-dynamic";
 
 // Remembers a cart once the shopper has typed a phone or email, so abandoned carts can be followed up.
 export const POST = handle(async req => {
+  if (!allow("cart:" + clientIp(req), 120, 600000)) throw new Bad("Too many requests.", 429);
   const b = await readJSON(req);
   const token = str(b.token, 64);
   if (!/^[a-z0-9-]{16,64}$/i.test(token)) throw new Bad("Bad cart.");

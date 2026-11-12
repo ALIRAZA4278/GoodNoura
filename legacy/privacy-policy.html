@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy – Good Noura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+  .legal { max-width: 780px; padding: 6px 0 70px; }
+  .legal h1 { font-size: 42px; margin: 8px 0 6px; }
+  .legal .updated { color: var(--muted); font-size: 13px; margin: 0 0 26px; }
+  .legal h2 { font-size: 22px; margin: 30px 0 8px; }
+  .legal p, .legal li { color: var(--muted); font-size: 15px; line-height: 1.7; }
+  .legal ul { padding-left: 20px; margin: 8px 0; }
+  .legal a { color: var(--gold); }
+  .legal b { color: var(--cream); font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<main class="wrap legal">
+  <div class="crumbs"><a href="/">Home</a> › <b>Privacy Policy</b></div>
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: 12 November 2026</p>
+
+  <p>Good Noura ("we", "us") sells nut butters online at goodnoura.com. This page explains what personal information we collect when you use the website, why we collect it and what we do with it.</p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li><b>Order details:</b> your name, WhatsApp/phone number, email address (optional), delivery address, city, the items you order and how you choose to pay.</li>
+    <li><b>Checkout details you type but don't submit:</b> if you enter a phone number or email at checkout and leave without ordering, we may save your cart and those details so we can follow up with you (for example on WhatsApp).</li>
+    <li><b>Reviews:</b> the name, city and text you send us when you write a review.</li>
+    <li><b>Messages:</b> anything you send us through the contact page or on WhatsApp.</li>
+    <li><b>Technical information:</b> cookies and similar technology (see below) and basic visit information such as the pages you view.</li>
+  </ul>
+  <p>We do <b>not</b> collect card numbers. Payment is cash on delivery or a bank transfer you make yourself, so we never see your bank login details.</p>
+
+  <h2>How we use it</h2>
+  <ul>
+    <li>To take, confirm, pack and deliver your order, and to collect cash on delivery.</li>
+    <li>To message you about your order by WhatsApp and email (confirmation, shipping and delivery updates).</li>
+    <li>To answer your questions and handle returns, damaged items or complaints.</li>
+    <li>To follow up on an unfinished checkout and to improve the website and our advertising.</li>
+    <li>To publish a review you sent us, once we have approved it. We show your first name or the name you gave and your city.</li>
+    <li>To keep our records and meet legal and tax obligations.</li>
+  </ul>
+
+  <h2>Who we share it with</h2>
+  <ul>
+    <li><b>Delivery partners:</b> our courier (currently Insta World) receives your name, phone number, delivery address, city and the amount to collect, so they can deliver your parcel.</li>
+    <li><b>Service providers:</b> companies that help us run the shop: our database and file storage provider (Supabase), our web hosting, and our email service (Gmail). They process the data for us and may not use it for anything else.</li>
+    <li><b>Advertising and analytics:</b> we use the Meta (Facebook) Pixel, which receives information about the pages you view and your actions (such as placing an order) to measure and improve our advertising.</li>
+    <li><b>The law:</b> if the law or a court requires us to share information, we will.</li>
+  </ul>
+  <p>We do not sell your personal information.</p>
+
+  <h2>Cookies and browser storage</h2>
+  <p>The website stores your shopping cart in your own browser so it is still there when you come back. The Meta Pixel sets cookies to measure advertising. You can block or delete cookies in your browser settings; the shop still works, but ads may be less relevant and some tracking will not work.</p>
+
+  <h2>How long we keep it</h2>
+  <p>We keep order records for as long as we need them to run the business and meet our legal and accounting duties. Unfinished checkout details are kept only as long as we need them to follow up, then deleted.</p>
+
+  <h2>How we protect it</h2>
+  <p>The website uses an encrypted (HTTPS) connection. Order data is stored in a protected database that only we can reach, and the admin area needs a login. No system is perfectly secure, but we take reasonable care to protect your information.</p>
+
+  <h2>Your choices</h2>
+  <p>You can ask us to show you the information we hold about you, correct it, or delete it, and you can ask us to stop messaging you. Contact us using the details below and we will help. We may need to keep certain order records where the law requires it.</p>
+
+  <h2>Children</h2>
+  <p>The website is meant for adults. We do not knowingly collect information from children.</p>
+
+  <h2>Changes</h2>
+  <p>We may update this policy from time to time. The date at the top shows when it last changed.</p>
+
+  <h2>Contact us</h2>
+  <p>Questions about privacy? Message us on WhatsApp at <a id="cPhone" href="#"></a> or email <a id="cEmail" href="#"></a>.</p>
+</main>
+<div id="site-footer"></div>
+<script src="catalog.js"></script>
+<script src="site.js"></script>
+<script>
+  GN.init("");
+  document.getElementById("cPhone").textContent = GN.PHONE; document.getElementById("cPhone").href = GN.WHATSAPP;
+  document.getElementById("cEmail").textContent = GN.EMAIL; document.getElementById("cEmail").href = "mailto:" + GN.EMAIL;
+</script>
+</body>
+</html>
