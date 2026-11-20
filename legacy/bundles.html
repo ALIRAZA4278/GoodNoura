@@ -17,13 +17,6 @@
   .prepaid-note div { font-size: 12.5px; color: var(--muted); }
   .prepaid-note strong { color: var(--text); display: block; font-size: 13px; }
   .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 28px 0 22px; padding-bottom: 16px; border-bottom: 1px solid var(--line-soft); flex-wrap: wrap; }
-  .nutwrap { position: relative; display: inline-block; }
-  .nutmenu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 15; min-width: 190px; padding: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 14px 34px rgba(0,0,0,.4); }
-  .nutmenu[hidden] { display: none; }
-  .nutmenu button { display: flex; justify-content: space-between; align-items: center; gap: 14px; width: 100%; background: none; border: 0; border-radius: 8px; padding: 9px 12px; color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; text-align: left; }
-  .nutmenu button:hover { background: rgba(255,255,255,.07); }
-  .nutmenu button.on { background: var(--gold); color: var(--gold-ink); }
-  .nutmenu em { font-style: normal; opacity: .7; font-weight: 500; }
   .empty-note { color: var(--muted); padding: 30px 0 50px; text-align: center; }
   .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
   .tab { background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; }
@@ -74,6 +67,7 @@
     <div class="group-head"><h2>Bundles</h2><span>Save up to 20% with online payment</span></div>
     <div class="grid cols-3" id="bundles"></div>
   </section>
+  <div id="nutGroups"></div>
   <p class="empty-note" id="noMatch" hidden>Nothing matches that filter. <a class="gold" href="/bundles">Show everything</a>.</p>
 
   <div id="deliverySlot" style="margin-bottom:40px"></div>
@@ -84,56 +78,54 @@
 <script src="catalog.js"></script>
 <script src="site.js"></script>
 <script>
-  // One row of four filters: All, Single spread, Bundles, and Nuts (opens a small list: Peanut, Almond, Cashew...).
+  // Four filters: All, Single spread, Bundles and Nuts. "Nuts" shows the products grouped by nut (Peanut, Almond, Cashew...),
+  // so a bundle with two nuts appears under both. That is why its number can be higher than All.
   const params = new URLSearchParams(location.search);
   const ORDER = ["Peanut", "Almond", "Cashew", "Hazelnut", "Pistachio", "Walnut", "Pecan"];
   const nuts = [...new Set(GN.products.flatMap(GN.nutsOf))].sort((a, b) => { const i = ORDER.indexOf(a), j = ORDER.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b); });
-  const TABS = [["all", "All"], ["singles", "Single spread"], ["bundles", "Bundles"]];
-  const NUTF = nuts.map(n => ["nut:" + n.toLowerCase(), n]);
-  const FILTERS = [...TABS, ...NUTF];
-  let menuOpen = false;
-  // Old links use ?filter=bundles; new ones also use ?nut=almond
-  let filter = params.get("nut") ? "nut:" + params.get("nut").toLowerCase() : (params.get("filter") || "all");
-  if (!FILTERS.some(f => f[0] === filter)) filter = "all";
+  const slug = n => n.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const withNut = n => GN.products.filter(p => GN.nutsOf(p).includes(n));
+  const nutsTotal = nuts.reduce((t, n) => t + withNut(n).length, 0);
+  const TABS = [["all", "All", GN.products.length], ["singles", "Single spread", GN.products.filter(p => p.type === "singles").length],
+    ["bundles", "Bundles", GN.products.filter(p => p.type === "bundles").length], ["nuts", "Nuts", nutsTotal]];
+  // Old links: ?filter=bundles, ?filter=singles, and ?nut=almond (the Nuts view, showing only that nut)
+  let filter = params.get("nut") ? "nuts" : (params.get("filter") || "all");
+  let only = params.get("nut") ? nuts.find(n => slug(n) === params.get("nut").toLowerCase()) || null : null;
+  if (!TABS.some(t => t[0] === filter)) filter = "all";
   let sort = "featured";
   GN.init(filter === "bundles" ? "Bundles" : "Shop all");
 
-  const matches = (p, f) => f === "all" || f === p.type || (f.startsWith("nut:") && GN.nutsOf(p).some(n => "nut:" + n.toLowerCase() === f));
-  const list = type => () => {
-    const l = GN.products.filter(p => p.type === type && matches(p, filter));
-    if (sort === "low") l.sort((a, b) => GN.priceOf(a) - GN.priceOf(b));
-    if (sort === "high") l.sort((a, b) => GN.priceOf(b) - GN.priceOf(a));
-    return l;
-  };
+  const sorted = l => { l = [...l]; if (sort === "low") l.sort((a, b) => GN.priceOf(a) - GN.priceOf(b)); if (sort === "high") l.sort((a, b) => GN.priceOf(b) - GN.priceOf(a)); return l; };
+  const list = type => () => sorted(GN.products.filter(p => p.type === type));
   GN.mount(document.getElementById("bundles"), list("bundles"));
   GN.mount(document.getElementById("singles"), list("singles"));
+  // one section per nut for the Nuts view
+  document.getElementById("nutGroups").innerHTML = nuts.map(n => `<section class="group" data-nutgroup="${GN.esc(n)}" hidden>
+      <div class="group-head"><h2>${GN.esc(n)}</h2><span class="nutcount"></span></div><div class="grid cols-4" id="nut-${slug(n)}"></div></section>`).join("");
+  nuts.forEach(n => GN.mount(document.getElementById("nut-" + slug(n)), () => sorted(withNut(n))));
   document.getElementById("deliverySlot").innerHTML = GN.delivery();
 
   function applyFilter() {
-    const count = f => GN.products.filter(p => matches(p, f)).length;
-    const nutNow = NUTF.find(f => f[0] === filter);
-    document.getElementById("tabs").innerHTML = TABS.map(([k, label]) =>
-      `<button class="tab" data-filter="${GN.esc(k)}" aria-pressed="${k === filter}">${GN.esc(label)} (${count(k)})</button>`).join("") +
-      `<span class="nutwrap"><button class="tab" data-nuts aria-pressed="${!!nutNow}" aria-haspopup="true" aria-expanded="${menuOpen}">${nutNow ? GN.esc(nutNow[1]) + " (" + count(nutNow[0]) + ")" : "Nuts (" + NUTF.length + ")"} <span aria-hidden="true">▾</span></button>` +
-      `<div class="nutmenu" role="menu" ${menuOpen ? "" : "hidden"}>${NUTF.map(([k, label]) => `<button role="menuitem" data-filter="${GN.esc(k)}" class="${k === filter ? "on" : ""}"><span>${GN.esc(label)}</span><em>${count(k)}</em></button>`).join("")}</div></span>`;
-    const s = GN.products.filter(p => p.type === "singles" && matches(p, filter)).length, b = GN.products.filter(p => p.type === "bundles" && matches(p, filter)).length;
-    document.getElementById("singlesCount").textContent = s + (s === 1 ? " flavour" : " flavours");
-    document.querySelector("[data-group=singles]").hidden = s === 0;
-    document.querySelector("[data-group=bundles]").hidden = b === 0;
-    document.getElementById("noMatch").hidden = s + b > 0;
+    document.getElementById("tabs").innerHTML = TABS.map(([k, label, n]) =>
+      `<button class="tab" data-filter="${k}" aria-pressed="${k === filter}">${label} (${n})</button>`).join("");
+    const nutView = filter === "nuts";
+    document.querySelector("[data-group=singles]").hidden = nutView || filter === "bundles";
+    document.querySelector("[data-group=bundles]").hidden = nutView || filter === "singles";
+    document.getElementById("singlesCount").textContent = GN.products.filter(p => p.type === "singles").length + " flavours";
+    document.querySelectorAll("[data-nutgroup]").forEach(g => {
+      g.hidden = !nutView || (only && g.dataset.nutgroup !== only);
+      const k = withNut(g.dataset.nutgroup).length; g.querySelector(".nutcount").textContent = k + (k === 1 ? " product" : " products");
+    });
+    document.getElementById("noMatch").hidden = !(nutView && !nuts.length);
     GN.rerender();
     // keep the address in step so the page can be shared or refreshed
-    const q = new URLSearchParams();
-    if (filter.startsWith("nut:")) q.set("nut", filter.slice(4)); else if (filter !== "all") q.set("filter", filter);
+    const q = new URLSearchParams(); if (filter !== "all") q.set("filter", filter);
     history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : ""));
   }
   document.getElementById("tabs").addEventListener("click", e => {
-    if (e.target.closest("[data-nuts]")) { menuOpen = !menuOpen; applyFilter(); return; }
     const t = e.target.closest("[data-filter]"); if (!t) return;
-    filter = t.dataset.filter; menuOpen = false; applyFilter();
+    filter = t.dataset.filter; only = null; applyFilter();
   });
-  document.addEventListener("click", e => { if (menuOpen && !e.target.closest(".nutwrap")) { menuOpen = false; applyFilter(); } });
-  document.addEventListener("keydown", e => { if (e.key === "Escape" && menuOpen) { menuOpen = false; applyFilter(); } });
   document.getElementById("sort").addEventListener("change", e => { sort = e.target.value; GN.rerender(); });
   applyFilter();
 </script>
