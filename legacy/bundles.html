@@ -77,11 +77,12 @@
 <script src="catalog.js"></script>
 <script src="site.js"></script>
 <script>
-  // One row of filters: All, Single spread, Bundles, then one per nut (Peanut, Almond, Cashew...)
+  // One row of filters: All, then one per nut (Peanut, Almond, Cashew...). Each nut shows its jars and bundles together.
   const params = new URLSearchParams(location.search);
   const ORDER = ["Peanut", "Almond", "Cashew", "Hazelnut", "Pistachio", "Walnut", "Pecan"];
   const nuts = [...new Set(GN.products.flatMap(GN.nutsOf))].sort((a, b) => { const i = ORDER.indexOf(a), j = ORDER.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b); });
-  const FILTERS = [["all", "All"], ["singles", "Single spread"], ["bundles", "Bundles"], ...nuts.map(n => ["nut:" + n.toLowerCase(), n])];
+  const TABS = [["all", "All"], ...nuts.map(n => ["nut:" + n.toLowerCase(), n])];
+  const FILTERS = [...TABS, ["singles", "Single spread"], ["bundles", "Bundles"]];   // the last two are only used by old links like ?filter=bundles
   // Old links use ?filter=bundles; new ones also use ?nut=almond
   let filter = params.get("nut") ? "nut:" + params.get("nut").toLowerCase() : (params.get("filter") || "all");
   if (!FILTERS.some(f => f[0] === filter)) filter = "all";
@@ -100,7 +101,7 @@
   document.getElementById("deliverySlot").innerHTML = GN.delivery();
 
   function applyFilter() {
-    document.getElementById("tabs").innerHTML = FILTERS.map(([k, label]) =>
+    document.getElementById("tabs").innerHTML = TABS.map(([k, label]) =>
       `<button class="tab" data-filter="${GN.esc(k)}" aria-pressed="${k === filter}">${GN.esc(label)} (${GN.products.filter(p => matches(p, k)).length})</button>`).join("");
     const s = GN.products.filter(p => p.type === "singles" && matches(p, filter)).length, b = GN.products.filter(p => p.type === "bundles" && matches(p, filter)).length;
     document.getElementById("singlesCount").textContent = s + (s === 1 ? " flavour" : " flavours");
