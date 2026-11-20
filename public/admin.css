@@ -263,3 +263,11 @@ body.drawer-open .drawer { transform: none; }
 .iw-out { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: var(--line-soft, #f6efe6); font-size: 12.5px; line-height: 1.5; overflow-wrap: anywhere; }
 .iw-out.err { background: #fdecea; color: #8f2a1a; }
 .iw-out .kv { margin: 0; }
+
+/* Nut filter + pill on the Products / Bundles lists */
+.fchips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+.fchips .flabel { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.fchips .chip { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); }
+.fchips .chip:hover { border-color: var(--rust); }
+.fchips .chip.on { background: var(--rust); border-color: var(--rust); color: #fff; }
+.nutpill { display: inline-block; margin-top: 4px; padding: 1px 9px; border-radius: 999px; background: var(--line-soft, #f6efe6); font-size: 11px; font-weight: 700; color: var(--rust); }

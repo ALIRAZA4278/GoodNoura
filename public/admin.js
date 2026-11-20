@@ -421,16 +421,29 @@ async function abandoned() {
 }
 
 // ---------- Products & bundles ----------
+// The nut a jar is made of (set on the product; older ones are guessed from the name), and the nuts inside a bundle
+const NUTS = ["Peanut", "Almond", "Cashew", "Hazelnut", "Pistachio", "Walnut", "Pecan"];
+const guessNut = t => { const w = NUTS.find(n => String(t || "").toLowerCase().includes(n.toLowerCase())); return w || ""; };
+const nutOf = p => String(p.nut || "").trim() || guessNut([p.name, p.flavour, p.id].join(" "));
+const nutsOf = p => p.type !== "bundles" ? [nutOf(p)].filter(Boolean)
+  : [...new Set((p.contains || []).map(id => state.products.find(x => x.id === id)).filter(Boolean).map(nutOf).filter(Boolean))];
+const sortNuts = list => [...list].sort((a, b) => { const i = NUTS.indexOf(a), j = NUTS.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b); });
+let pnut = "all";   // nut filter on the Products / Bundles lists
 async function productList(type) {
   state.products = await api("products");
-  const list = state.products.filter(p => p.type === type);
+  const all = state.products.filter(p => p.type === type);
   const isB = type === "bundles";
+  const nutsHere = sortNuts([...new Set(all.flatMap(nutsOf))]);
+  if (pnut !== "all" && !nutsHere.includes(pnut)) pnut = "all";
+  const list = all.filter(p => pnut === "all" || nutsOf(p).includes(pnut));
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>${isB ? "Bundles" : "Products"}</h1><p>${isB ? "Ready-made boxes, and the Make Your Own Bundle rule." : "Single jars sold on the site."} Changes show on the website straight away.</p></div>
       <div class="actions"><button class="b primary" id="addP">+ Add ${isB ? "bundle" : "product"}</button></div></div>
+    <div class="fchips" role="group" aria-label="Filter by nut"><span class="flabel">Nut</span>${[["all", "All"], ...nutsHere.map(n => [n, n])].map(([k, label]) =>
+      `<button class="chip${k === pnut ? " on" : ""}" data-pnut="${esc(k)}">${esc(label)} (${k === "all" ? all.length : all.filter(p => nutsOf(p).includes(k)).length})</button>`).join("")}</div>
     <div class="card plist">${list.length ? `<div class="plist-head"><span></span><span>${isB ? "Bundle" : "Product"}</span><span>Price</span><span>Status</span><span style="text-align:right">Actions</span></div>
       ${list.map(p => `<div class="prow${p.visible ? "" : " off"}"><img class="pimg" src="${esc(p.img)}" alt="">
-        <div class="pname"><b>${esc(p.name)}</b><span>${esc(p.sub || "")}</span></div>
+        <div class="pname"><b>${esc(p.name)}</b><span>${esc(p.sub || "")}</span>${nutsOf(p).length ? `<span class="nutpill">${nutsOf(p).map(esc).join(" · ")}</span>` : ""}</div>
         <div class="pprice">${isB ? `<b>${fmt(p.price)}</b> <small>cash on delivery</small><br><small>${fmt(p.onlinePrice)} online · ${fmt(p.separate)} separately</small>`
           : p.sizes.map(([z, v]) => `${esc(z)} · <b>${fmt(v)}</b>`).join("<br>")}</div>
         <div class="pstatus"><span class="pill ${p.visible ? "on" : "off"}">${p.visible ? "Visible" : "Hidden"}</span>${p.inStock ? `<span class="pill on">In stock</span>` : `<span class="pill warn">Sold out</span>`}</div>
@@ -439,11 +452,12 @@ async function productList(type) {
           <button class="b sm" data-vis="${esc(p.id)}">${p.visible ? "Hide" : "Show"}</button>
           <a class="b sm" href="/product?p=${encodeURIComponent(p.id)}" target="_blank" rel="noopener">View</a>
           <button class="b sm primary" data-edit="${esc(p.id)}">Edit</button></div></div>`).join("")}`
-      : `<div class="empty">Nothing here yet.</div>`}</div>
+      : `<div class="empty">${all.length ? "No items with that nut." : "Nothing here yet."}</div>`}</div>
     ${isB ? `<div class="card box" style="margin-top:14px;max-width:560px"><h2>Make Your Own Bundle</h2>
       <form class="form" id="myob"><label>Minimum jars per custom bundle<input type="number" name="minJars" min="1" max="12" value="${esc(state.settings.minJars || 2)}"></label>
       <p class="muted" style="margin:0;font-size:12.5px">Custom bundles use normal jar prices (plus the 10% online saving). Ready-made bundles above are the discounted ones.</p>
       <button class="b primary" type="submit" style="justify-self:start">Save</button></form></div>` : ""}`;
+  $$("[data-pnut]").forEach(b => b.onclick = () => { pnut = b.dataset.pnut; productList(type); });
   const patch = async (id, body, msg) => { await api("products/" + id, { method: "PATCH", body }); toast(msg); productList(type); };
   $$("[data-stock]").forEach(b => b.onclick = run(() => { const p = state.products.find(x => x.id === b.dataset.stock); return patch(p.id, { inStock: !p.inStock }, `${p.name} ${p.inStock ? "marked sold out" : "back in stock"}.`); }));
   $$("[data-vis]").forEach(b => b.onclick = run(() => { const p = state.products.find(x => x.id === b.dataset.vis); return patch(p.id, { visible: !p.visible }, `${p.name} ${p.visible ? "hidden from" : "shown on"} the shop.`); }));
@@ -455,8 +469,9 @@ async function productList(type) {
     $("#myob").onsubmit = run(async e => { e.preventDefault(); await api("settings", { method: "PUT", body: { minJars: e.target.minJars.value } }); toast("Saved."); });
   }
 }
-const products = () => productList("singles");
-const bundles = () => productList("bundles");
+// Opening the tab starts with every nut shown; the filter only sticks while you edit or toggle items on that list
+const products = () => { pnut = "all"; return productList("singles"); };
+const bundles = () => { pnut = "all"; return productList("bundles"); };
 
 // One size row: size, price and an optional photo that shows whenever that size is selected in the shop.
 const szThumb = src => src ? `<img src="${esc(src)}" alt=""><span>Change</span>` : `<span class="none">+ Photo<small>optional</small></span>`;
@@ -506,7 +521,7 @@ function editProduct(p) {
           <label>Price if bought separately<input name="separate" type="number" min="1" value="${esc(p.separate || "")}"></label></div>
         <fieldset><legend>What's inside (shown on the page)</legend><div class="rows" id="items">${rowsHTML("item", p.items && p.items.length ? p.items : [["", ""]], ["Jar name", "Size (e.g. 510g)"])}</div>
           <button type="button" class="b sm" data-addrow="items" style="justify-self:start">+ Add row</button></fieldset>
-        <fieldset><legend>Jars in this bundle (used for "Also in" and cart suggestions)</legend><div class="chips">${singles.map(s => `<label class="check"><input type="checkbox" name="contains" value="${esc(s.id)}" ${(p.contains || []).includes(s.id) ? "checked" : ""}> ${esc(s.name)}</label>`).join("")}</div></fieldset>
+        <fieldset><legend>Jars in this bundle (used for "Also in", cart suggestions and the Nut filter)</legend><div class="chips">${singles.map(s => `<label class="check"><input type="checkbox" name="contains" value="${esc(s.id)}" ${(p.contains || []).includes(s.id) ? "checked" : ""}> ${esc(s.name)}</label>`).join("")}</div></fieldset>
         <fieldset><legend>Customer choice (optional)</legend>
           <div class="row"><label>Question<input name="choiceLabel" value="${esc(p.choice ? p.choice.label : "")}" placeholder="e.g. Choose your peanut butter"></label>
           <label>Options <small>(comma separated)</small><input name="choiceOpts" value="${esc(p.choice ? p.choice.opts.join(", ") : "")}" placeholder="Creamy, Crunchy, Chocolate"></label></div></fieldset>
@@ -518,6 +533,8 @@ function editProduct(p) {
           <p class="muted" style="margin:0;font-size:12px">The online price is worked out automatically (10% off).</p></fieldset>
         <div class="row"><label>Flavour <small>(short name, e.g. Almond)</small><input name="flavour" value="${esc(p.flavour || "")}"></label>
           <label>Card colour<input name="color" type="color" value="${esc(p.color || "#d9a566")}" style="height:40px;padding:3px"></label></div>
+        <label>Nut <small>(used by the Nut filter on the shop page)</small><input name="nut" list="nutList" value="${esc(nutOf(p))}" placeholder="e.g. Peanut" autocomplete="off"></label>
+        <datalist id="nutList">${[...new Set([...NUTS, ...state.products.map(nutOf)].filter(Boolean))].map(n => `<option value="${esc(n)}">`).join("")}</datalist>
         <label>Ingredients<input name="ingredients" value="${esc(p.ingredients || "")}" placeholder="e.g. 100% roasted peanuts"></label>
         <label>Allergen information<input name="allergen" value="${esc(p.allergen || "")}" placeholder="e.g. Contains peanuts"></label>`}
       <fieldset><legend>Main photo *</legend><div class="img-pick"><img id="imgPrev" src="${esc(p.img || "")}" alt="">
@@ -561,7 +578,7 @@ function editProduct(p) {
     if (isB) Object.assign(data, { price: f.get("price"), onlinePrice: f.get("onlinePrice"), separate: f.get("separate"), items: rows("#items", "item"), contains: f.getAll("contains"),
       ribbon: f.get("ribbon"), featured: !!f.get("featured"), color: p.color,
       choice: f.get("choiceOpts").trim() ? { label: f.get("choiceLabel"), opts: f.get("choiceOpts").split(",").map(s => s.trim()).filter(Boolean) } : null });
-    else Object.assign(data, { sizes: rows("#sizes", "size"), flavour: f.get("flavour"), color: f.get("color"), ingredients: f.get("ingredients"), allergen: f.get("allergen"),
+    else Object.assign(data, { sizes: rows("#sizes", "size"), flavour: f.get("flavour"), color: f.get("color"), ingredients: f.get("ingredients"), allergen: f.get("allergen"), nut: (f.get("nut") || "").trim(),
       lids: p.color === f.get("color") && p.lids ? p.lids : [f.get("color")] });
     const body = { data, visible: !!f.get("visible"), inStock: !!f.get("inStock"), ...(f.get("sort") !== "" ? { sort: f.get("sort") } : {}) };
     try {

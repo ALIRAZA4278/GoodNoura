@@ -27,6 +27,19 @@ const GN = (() => {
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
   const byId = id => products.find(p => p.id === id);
+  // Which nut a jar is made of. The admin sets it on each product; older products fall back to a guess from their name.
+  const NUT_GUESS = ["peanut", "almond", "cashew", "hazelnut", "pistachio", "walnut", "pecan"];
+  const cap = w => w.charAt(0).toUpperCase() + w.slice(1);
+  const guessNut = p => { const t = [p.name, p.flavour, p.id].join(" ").toLowerCase(); const w = NUT_GUESS.find(x => t.includes(x)); return w ? cap(w) : ""; };
+  const nutOf = p => String(p.nut || "").trim() || guessNut(p);
+  // A jar has one nut; a bundle has every nut found in the jars it contains
+  const nutsOf = p => {
+    if (p.type !== "bundles") return [nutOf(p)].filter(Boolean);
+    const ids = (p.contains && p.contains.length) ? p.contains : [];
+    const found = ids.map(id => byId(id)).filter(Boolean).map(nutOf).filter(Boolean);
+    if (!found.length) (p.items || []).forEach(([n]) => { const g = guessNut({ name: n }); if (g) found.push(g); });
+    return [...new Set(found)];
+  };
   const bundlesWith = id => products.filter(b => contains[b.id] && contains[b.id].includes(id));
   // Reviews for this product (or the jars in this bundle) first, then the rest
   const reviewsFor = p => {
@@ -269,6 +282,6 @@ const GN = (() => {
     renderCart();
   }
 
-  return { products, byId, url, reviews, reviewsFor, reviewHTML, bundlesWith, sel, priceOf, onlineOf, savePct, fmt, online, ico, jar, photos, imgOf, delivery, shipFor, shipShort, shipLong, SHIP_FEE, FREE_AT, card, mount, rerender,
+  return { products, byId, nutOf, nutsOf, url, reviews, reviewsFor, reviewHTML, bundlesWith, sel, priceOf, onlineOf, savePct, fmt, online, ico, jar, photos, imgOf, delivery, shipFor, shipShort, shipLong, SHIP_FEE, FREE_AT, card, mount, rerender,
     add, addLine, openCart, closeCart, clearCart, cart: () => cart, esc, init, settings: S, PHONE, WHATSAPP, EMAIL };
 })();
