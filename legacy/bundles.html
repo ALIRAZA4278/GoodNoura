@@ -17,9 +17,6 @@
   .prepaid-note div { font-size: 12.5px; color: var(--muted); }
   .prepaid-note strong { color: var(--text); display: block; font-size: 13px; }
   .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 28px 0 22px; padding-bottom: 16px; border-bottom: 1px solid var(--line-soft); flex-wrap: wrap; }
-  .filters { display: grid; gap: 10px; }
-  .frow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .frow .flabel { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); min-width: 40px; }
   .empty-note { color: var(--muted); padding: 30px 0 50px; text-align: center; }
   .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
   .tab { background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; }
@@ -51,10 +48,7 @@
   </section>
 
   <div class="toolbar">
-    <div class="filters">
-      <div class="frow"><span class="flabel">Type</span><div class="tabs" id="typeTabs" role="group" aria-label="Filter by type"></div></div>
-      <div class="frow"><span class="flabel">Nut</span><div class="tabs" id="nutTabs" role="group" aria-label="Filter by nut"></div></div>
-    </div>
+    <div class="tabs" id="tabs" role="group" aria-label="Filter"></div>
     <label class="sort">Sort by
       <select id="sort">
         <option value="featured">Featured</option>
@@ -83,21 +77,20 @@
 <script src="catalog.js"></script>
 <script src="site.js"></script>
 <script>
+  // One row of filters: All, Single spread, Bundles, then one per nut (Peanut, Almond, Cashew...)
   const params = new URLSearchParams(location.search);
-  let filter = ["singles", "bundles"].includes(params.get("filter")) ? params.get("filter") : "all";
-  let nut = (params.get("nut") || "all").toLowerCase();
+  const ORDER = ["Peanut", "Almond", "Cashew", "Hazelnut", "Pistachio", "Walnut", "Pecan"];
+  const nuts = [...new Set(GN.products.flatMap(GN.nutsOf))].sort((a, b) => { const i = ORDER.indexOf(a), j = ORDER.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b); });
+  const FILTERS = [["all", "All"], ["singles", "Single spread"], ["bundles", "Bundles"], ...nuts.map(n => ["nut:" + n.toLowerCase(), n])];
+  // Old links use ?filter=bundles; new ones also use ?nut=almond
+  let filter = params.get("nut") ? "nut:" + params.get("nut").toLowerCase() : (params.get("filter") || "all");
+  if (!FILTERS.some(f => f[0] === filter)) filter = "all";
   let sort = "featured";
   GN.init(filter === "bundles" ? "Bundles" : "Shop all");
 
-  // Every nut that appears in the shop, in the order the products are listed
-  const ORDER = ["Peanut", "Almond", "Cashew", "Hazelnut", "Pistachio", "Walnut", "Pecan"];
-  const nuts = [...new Set(GN.products.flatMap(GN.nutsOf))].sort((a, b) => { const i = ORDER.indexOf(a), j = ORDER.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b); });
-  if (nut !== "all" && !nuts.some(n => n.toLowerCase() === nut)) nut = "all";
-  const hasNut = p => nut === "all" || GN.nutsOf(p).some(n => n.toLowerCase() === nut);
-  const inType = (p, t) => t === "all" || p.type === t;
-
+  const matches = (p, f) => f === "all" || f === p.type || (f.startsWith("nut:") && GN.nutsOf(p).some(n => "nut:" + n.toLowerCase() === f));
   const list = type => () => {
-    const l = GN.products.filter(p => p.type === type && hasNut(p));
+    const l = GN.products.filter(p => p.type === type && matches(p, filter));
     if (sort === "low") l.sort((a, b) => GN.priceOf(a) - GN.priceOf(b));
     if (sort === "high") l.sort((a, b) => GN.priceOf(b) - GN.priceOf(a));
     return l;
@@ -106,32 +99,23 @@
   GN.mount(document.getElementById("singles"), list("singles"));
   document.getElementById("deliverySlot").innerHTML = GN.delivery();
 
-  // The counts on the tabs always match what you would see: type counts respect the chosen nut, nut counts respect the chosen type
-  function drawTabs() {
-    const n = (t, u) => GN.products.filter(p => inType(p, t) && (u === "all" || GN.nutsOf(p).some(x => x.toLowerCase() === u))).length;
-    const typeTabs = [["all", "All"], ["singles", "Single spread"], ["bundles", "Bundles"]];
-    document.getElementById("typeTabs").innerHTML = typeTabs.map(([k, label]) =>
-      `<button class="tab" data-filter="${k}" aria-pressed="${k === filter}">${label} (${n(k, nut)})</button>`).join("");
-    const nutTabs = [["all", "All nuts"], ...nuts.map(x => [x.toLowerCase(), x])];
-    document.getElementById("nutTabs").innerHTML = nutTabs.map(([k, label]) =>
-      `<button class="tab" data-nut="${GN.esc(k)}" aria-pressed="${k === nut}">${GN.esc(label)} (${n(filter, k)})</button>`).join("");
-  }
   function applyFilter() {
-    drawTabs();
-    const s = GN.products.filter(p => p.type === "singles" && hasNut(p)).length, b = GN.products.filter(p => p.type === "bundles" && hasNut(p)).length;
+    document.getElementById("tabs").innerHTML = FILTERS.map(([k, label]) =>
+      `<button class="tab" data-filter="${GN.esc(k)}" aria-pressed="${k === filter}">${GN.esc(label)} (${GN.products.filter(p => matches(p, k)).length})</button>`).join("");
+    const s = GN.products.filter(p => p.type === "singles" && matches(p, filter)).length, b = GN.products.filter(p => p.type === "bundles" && matches(p, filter)).length;
     document.getElementById("singlesCount").textContent = s + (s === 1 ? " flavour" : " flavours");
-    const show = { singles: (filter === "all" || filter === "singles") && s > 0, bundles: (filter === "all" || filter === "bundles") && b > 0 };
-    document.querySelectorAll(".group").forEach(g => g.hidden = !show[g.dataset.group]);
-    document.getElementById("noMatch").hidden = show.singles || show.bundles;
+    document.querySelector("[data-group=singles]").hidden = s === 0;
+    document.querySelector("[data-group=bundles]").hidden = b === 0;
+    document.getElementById("noMatch").hidden = s + b > 0;
     GN.rerender();
     // keep the address in step so the page can be shared or refreshed
-    const q = new URLSearchParams(); if (filter !== "all") q.set("filter", filter); if (nut !== "all") q.set("nut", nut);
+    const q = new URLSearchParams();
+    if (filter.startsWith("nut:")) q.set("nut", filter.slice(4)); else if (filter !== "all") q.set("filter", filter);
     history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : ""));
   }
-  document.querySelector(".filters").addEventListener("click", e => {
+  document.getElementById("tabs").addEventListener("click", e => {
     const t = e.target.closest(".tab"); if (!t) return;
-    if (t.dataset.filter) filter = t.dataset.filter; else nut = t.dataset.nut;
-    applyFilter();
+    filter = t.dataset.filter; applyFilter();
   });
   document.getElementById("sort").addEventListener("change", e => { sort = e.target.value; GN.rerender(); });
   applyFilter();
