@@ -37,7 +37,7 @@
   if (!last || !last.order || !last.order.id) {
     main.innerHTML = `<div class="empty-co"><h1 style="font-size:36px">No recent order here</h1>
       <p class="muted">If you just placed an order, we'll message you on WhatsApp to confirm it.</p>
-      <a class="btn btn-gold" href="/bundles">Back to the shop</a></div>`;
+      <a class="btn btn-gold" href="/shop">Back to the shop</a></div>`;
   } else {
     const d = last.order, name = last.name || "";
     const b = d.bank, has = b && (b.accountNumber || b.iban);

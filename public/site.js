@@ -111,7 +111,7 @@ const GN = (() => {
   }
 
   // Header / footer / cart drawer
-  const NAV = [["/", "Home"], ["/bundles", "Shop all"], ["/bundles?filter=bundles", "Bundles"],
+  const NAV = [["/", "Home"], ["/shop", "Shop all"], ["/shop?filter=bundles", "Bundles"],
     ["/make-your-own-bundle", "Make your own bundle"], ["/our-story", "Our story"], ["/contact", "Contact"]];
   function header(active) {
     return `<div class="announce"><div class="wrap">
@@ -133,7 +133,7 @@ const GN = (() => {
     return `<footer class="site"><div class="wrap"><div class="cols">
         <div><h3>Rooted in care. Made to be loved.</h3><p>Honest nut butters, delivered free all over Pakistan.</p></div>
         <div><h4>Quick links</h4><ul>
-          <li><a href="/bundles">Shop all</a></li><li><a href="/make-your-own-bundle">Make Your Own Bundle</a></li>
+          <li><a href="/shop">Shop all</a></li><li><a href="/make-your-own-bundle">Make Your Own Bundle</a></li>
           <li><a href="/our-story">Our Story</a></li><li><a href="/contact">Contact Us</a></li>
           <li><a href="/privacy-policy">Privacy Policy</a></li><li><a href="/terms-and-conditions">Terms and Conditions</a></li></ul></div>
         <div><h4>Contact us</h4><ul>

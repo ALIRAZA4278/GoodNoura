@@ -110,18 +110,30 @@ const refreshCounts = run(async () => {
 function setCount(t, n) { const c = $(`[data-count="${t}"]`); if (c) { c.hidden = !n; c.textContent = n; } }
 
 // ---------- Dashboard ----------
-let range = "30", metric = "orders";
-const RANGES = [["7", "7 days"], ["30", "30 days"], ["90", "3 months"], ["365", "1 year"], ["all", "All time"]];
+let range = "30", metric = "orders", cFrom = "", cTo = "";   // cFrom / cTo: the Custom range, as YYYY-MM-DD
+const RANGES = [["7", "7 days"], ["30", "30 days"], ["90", "3 months"], ["365", "1 year"], ["all", "All time"], ["custom", "Custom"]];
+const ymd = d => { const p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+const dayLabel = ymdStr => new Date(ymdStr + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const counted = o => !["Cancelled", "Returned"].includes(o.status);
 async function dashboard() {
   state.orders = await api("orders");
-  const since = range === "all" ? 0 : Date.now() - +range * 864e5;
-  const list = state.orders.filter(o => new Date(o.created_at) >= since);
+  // The period to look at: a preset, or the From/To days picked by the admin (both days included)
+  let since, until = Infinity, endDay = new Date(), days;
+  const today = ymd(new Date());
+  if (range === "custom") {
+    if (!cFrom || !cTo) { cTo = today; cFrom = ymd(new Date(Date.now() - 29 * 864e5)); }
+    if (cTo > today) cTo = today;
+    if (cFrom > cTo) [cFrom, cTo] = [cTo, cFrom];
+    since = +new Date(cFrom + "T00:00:00"); until = +new Date(cTo + "T23:59:59.999"); endDay = new Date(cTo + "T00:00:00");
+    days = Math.round((+endDay - +new Date(cFrom + "T00:00:00")) / 864e5) + 1;
+  } else since = range === "all" ? 0 : Date.now() - +range * 864e5;
+  const list = state.orders.filter(o => { const t = +new Date(o.created_at); return t >= since && t <= until; });
+  const rangeName = range === "custom" ? (cFrom === cTo ? dayLabel(cFrom) : `${dayLabel(cFrom)} – ${dayLabel(cTo)}`) : range === "all" ? "All time" : RANGES.find(r => r[0] === range)[1];
   const live = list.filter(counted);
   const revenue = live.reduce((n, o) => n + o.total, 0);
   const delivered = list.filter(o => o.status === "Delivered").length, returned = list.filter(o => o.status === "Returned").length;
   const online = list.filter(o => o.payment === "online").length;
-  const days = range === "all" ? Math.max(7, Math.ceil((Date.now() - Math.min(...list.map(o => +new Date(o.created_at)), Date.now())) / 864e5) + 1) : +range;
+  if (range !== "custom") days = range === "all" ? Math.max(7, Math.ceil((Date.now() - Math.min(...list.map(o => +new Date(o.created_at)), Date.now())) / 864e5) + 1) : +range;
   const products = {};
   live.forEach(o => o.items.forEach(l => { products[l.name] = (products[l.name] || 0) + l.qty; }));
   const top = Object.entries(products).sort((a, b) => b[1] - a[1]).slice(0, 6);
@@ -133,6 +145,8 @@ async function dashboard() {
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Dashboard</h1><p>How the shop is doing.</p></div>
       <div class="seg" id="ranges">${RANGES.map(([v, l]) => `<button data-r="${v}" aria-pressed="${v === range}">${l}</button>`).join("")}</div></div>
+    ${range === "custom" ? `<div class="custom-range"><label>From <input type="date" id="cFrom" value="${cFrom}" max="${today}"></label>
+      <label>To <input type="date" id="cTo" value="${cTo}" max="${today}"></label><span class="muted">${days} day${days === 1 ? "" : "s"}</span></div>` : ""}
     <div class="stats">
       <div class="card stat"><span>Orders</span><b>${list.length}</b><small>${list.filter(o => o.status === "Pending").length} pending</small></div>
       <div class="card stat"><span>Revenue</span><b>${fmt(revenue)}</b><small>Excludes cancelled &amp; returned</small></div>
@@ -140,9 +154,9 @@ async function dashboard() {
       <div class="card stat"><span>Delivery rate</span><b>${delivered + returned ? Math.round(delivered / (delivered + returned) * 100) : 0}%</b><small>${delivered} delivered · ${returned} returned</small></div>
     </div>
     <div class="grid2">
-      <div class="card box"><h2>${range === "all" ? "All time" : RANGES.find(r => r[0] === range)[1]}
+      <div class="card box"><h2>${esc(rangeName)}
         <span class="seg" id="metric"><button data-m="orders" aria-pressed="${metric === "orders"}">Orders</button><button data-m="revenue" aria-pressed="${metric === "revenue"}">Revenue</button></span></h2>
-        ${chart(live, Math.min(days, 365))}</div>
+        ${chart(live, range === "custom" ? Math.min(days, 3650) : Math.min(days, 365), endDay)}</div>
       <div class="card box"><h2>Order status</h2><div class="bars">${byStatus.map(([s, n]) => `
         <div class="bar-row"><span>${s}</span><div class="bar-track"><div class="bar-fill" style="width:${n / maxStatus * 100}%;background:${colors[s]}"></div></div><b>${n}</b></div>`).join("")}</div></div>
     </div>
@@ -155,13 +169,18 @@ async function dashboard() {
         : `<p class="muted">Sales will show here.</p>`}</div>
     </div>`;
   $$("#ranges button").forEach(b => b.onclick = () => { range = b.dataset.r; dashboard(); });
+  if ($("#cFrom")) {
+    // Moving one end past the other drags the other end along (a one-day range), instead of flipping the dates
+    $("#cFrom").onchange = e => { if (e.target.value) { cFrom = e.target.value; if (cFrom > cTo) cTo = cFrom; dashboard(); } };
+    $("#cTo").onchange = e => { if (e.target.value) { cTo = e.target.value; if (cTo < cFrom) cFrom = cTo; dashboard(); } };
+  }
   $$("#metric button").forEach(b => b.onclick = () => { metric = b.dataset.m; dashboard(); });
   $$("[data-order]").forEach(r => r.onclick = () => openOrder(r.dataset.order));
 }
 // Bars per day (or per week for long ranges), drawn as SVG
-function chart(list, days) {
+function chart(list, days, end = new Date()) {
   if (!list.length) return `<div class="chart-empty">No orders in this period yet.</div>`;
-  const step = days > 120 ? 7 : 1, n = Math.ceil(days / step), start = new Date(); start.setHours(0, 0, 0, 0);
+  const step = days > 120 ? 7 : 1, n = Math.ceil(days / step), start = new Date(end); start.setHours(0, 0, 0, 0);   // the last bar is the last day of the period
   const buckets = Array.from({ length: n }, (_, i) => ({ t: +start - (n - 1 - i) * step * 864e5, v: 0 }));
   list.forEach(o => { const t = new Date(o.created_at); t.setHours(0, 0, 0, 0); const i = n - 1 - Math.floor((+start - +t) / (step * 864e5)); if (buckets[i]) buckets[i].v += metric === "orders" ? 1 : o.total; });
   const max = Math.max(1, ...buckets.map(b => b.v)), W = 600, H = 200, pad = 26, bw = (W - pad) / n;

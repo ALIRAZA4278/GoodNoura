@@ -189,7 +189,7 @@
   GN.init(p.type === "bundles" ? "Bundles" : "Shop all");
   document.title = `${p.name} – Good Noura`;
   document.getElementById("crumbs").innerHTML =
-    `<a href="/">Home</a> › <a href="/bundles${p.type === "bundles" ? "?filter=bundles" : ""}">${p.type === "bundles" ? "Bundles" : "Shop"}</a> › <b>${p.name}</b>`;
+    `<a href="/">Home</a> › <a href="/shop${p.type === "bundles" ? "?filter=bundles" : ""}">${p.type === "bundles" ? "Bundles" : "Shop"}</a> › <b>${p.name}</b>`;
 
   // Gallery
   const shots = GN.photos(p);
