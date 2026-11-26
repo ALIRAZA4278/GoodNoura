@@ -27,19 +27,6 @@ const GN = (() => {
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
   const byId = id => products.find(p => p.id === id);
-  // Which nut a jar is made of. The admin sets it on each product; older products fall back to a guess from their name.
-  const NUT_GUESS = ["peanut", "almond", "cashew", "hazelnut", "pistachio", "walnut", "pecan"];
-  const cap = w => w.charAt(0).toUpperCase() + w.slice(1);
-  const guessNut = p => { const t = [p.name, p.flavour, p.id].join(" ").toLowerCase(); const w = NUT_GUESS.find(x => t.includes(x)); return w ? cap(w) : ""; };
-  const nutOf = p => String(p.nut || "").trim() || guessNut(p);
-  // A jar has one nut; a bundle has every nut found in the jars it contains
-  const nutsOf = p => {
-    if (p.type !== "bundles") return [nutOf(p)].filter(Boolean);
-    const ids = (p.contains && p.contains.length) ? p.contains : [];
-    const found = ids.map(id => byId(id)).filter(Boolean).map(nutOf).filter(Boolean);
-    if (!found.length) (p.items || []).forEach(([n]) => { const g = guessNut({ name: n }); if (g) found.push(g); });
-    return [...new Set(found)];
-  };
   const bundlesWith = id => products.filter(b => contains[b.id] && contains[b.id].includes(id));
   // Reviews for this product (or the jars in this bundle) first, then the rest
   const reviewsFor = p => {
@@ -55,7 +42,9 @@ const GN = (() => {
   products.forEach(p => sel[p.id] = { size: p.sizes ? p.sizes[0][0] : null, choice: p.choice ? p.choice.opts[0] : null });
   const priceOf = p => p.sizes ? p.sizes.find(s => s[0] === sel[p.id].size)[1] : p.price;
   const onlineOf = p => p.sizes ? online(priceOf(p)) : p.onlinePrice;
-  const savePct = p => Math.round((p.separate - p.price) / p.separate * 100);
+  // "Bought separately" price for the chosen size (sized bundles, like the nut boxes, keep one per size)
+  const sepOf = p => (p.separateBySize && p.separateBySize[(sel[p.id] || {}).size]) || p.separate;
+  const savePct = p => Math.round((sepOf(p) - priceOf(p)) / sepOf(p) * 100);
 
   // Icons
   const ico = {
@@ -95,9 +84,9 @@ const GN = (() => {
       { label: "What's inside", html: pic(GEN + p.id + "-inside.jpg", p.name + ": every jar in the box") },
       { label: "Savings", html: `<div class="ph" style="background:#f4ead9;flex-direction:column;text-align:center">
           <div><div style="font:600 18px var(--serif);color:#5a3220">Bundle &amp; save</div>
-          <div style="font:700 54px/1 var(--serif);color:#8e3c19">${fmt(p.separate - p.price)}</div>
+          <div style="font:700 54px/1 var(--serif);color:#8e3c19">${fmt(sepOf(p) - priceOf(p))}</div>
           <div style="font-size:13px;color:#5a3220;margin-top:6px">vs. buying each jar separately</div>
-          <div style="font-size:13px;color:#5a3220;margin-top:14px">Pay online for <b>${fmt(p.onlinePrice)}</b></div></div></div>` },
+          <div style="font-size:13px;color:#5a3220;margin-top:14px">Pay online for <b>${fmt(onlineOf(p))}</b></div></div></div>` },
       { label: "Lifestyle", html: pic(GEN + p.id + "-life.jpg", p.name + " on a breakfast table") },
     ];
     const dark = ["#5a3220", "#b7773d"].includes(p.color);
@@ -111,7 +100,7 @@ const GN = (() => {
   }
 
   // Header / footer / cart drawer
-  const NAV = [["/", "Home"], ["/shop", "Shop all"], ["/shop?filter=bundles", "Bundles"],
+  const NAV = [["/", "Home"], ["/shop", "Shop all"], ["/shop?filter=bundles", "Bundles"], ["/nuts", "Nuts"],
     ["/make-your-own-bundle", "Make your own bundle"], ["/our-story", "Our story"], ["/contact", "Contact"]];
   function header(active) {
     return `<div class="announce"><div class="wrap">
@@ -158,13 +147,13 @@ const GN = (() => {
     const s = sel[p.id], price = priceOf(p);
     const badges = p.type === "bundles"
       ? `<div class="badges">${p.badge ? `<span class="badge">${p.badge}</span>` : ""}<span class="badge dark">Save ${savePct(p)}%</span></div>` : "";
-    const contents = p.items ? `<ul class="contents">${p.items.map(([n, w]) => `<li><span>${n}</span><span>${w}</span></li>`).join("")}</ul>` : "";
+    const contents = p.items ? `<ul class="contents">${p.items.map(([n, w]) => `<li><span>${n}</span><span>${w || s.size || ""}</span></li>`).join("")}</ul>` : "";
     const choice = p.choice ? `<p class="opt-label">${p.choice.label}</p><div class="opts">${p.choice.opts.map(o =>
       `<button class="opt" data-id="${p.id}" data-choice="${o}" aria-pressed="${o === s.choice}">${o}</button>`).join("")}</div>` : "";
     const sizes = p.sizes && p.sizes.length > 1
       ? `<div class="opts">${p.sizes.map(([z, v]) => `<button class="opt" data-id="${p.id}" data-size="${z}" aria-pressed="${z === s.size}">${z}<small>${fmt(v)}</small></button>`).join("")}</div>`
       : p.sizes ? `<div class="opts"><span class="opt" aria-pressed="true" style="flex:none">${p.sizes[0][0]}<small>Jar</small></span></div>` : "";
-    const was = p.separate ? `<span class="was">${fmt(p.separate)}</span><span class="save">Save ${fmt(p.separate - price)}</span>` : "";
+    const was = sepOf(p) ? `<span class="was">${fmt(sepOf(p))}</span><span class="save">Save ${fmt(sepOf(p) - price)}</span>` : "";
     return `<article class="card${p.featured ? " featured" : ""}">
       ${p.ribbon ? `<span class="ribbon">${p.ribbon}</span>` : ""}
       <a class="media" href="${url(p)}"><img src="${imgOf(p)}" alt="${p.name}" loading="lazy">${badges}</a>
@@ -282,6 +271,6 @@ const GN = (() => {
     renderCart();
   }
 
-  return { products, byId, nutOf, nutsOf, url, reviews, reviewsFor, reviewHTML, bundlesWith, sel, priceOf, onlineOf, savePct, fmt, online, ico, jar, photos, imgOf, delivery, shipFor, shipShort, shipLong, SHIP_FEE, FREE_AT, card, mount, rerender,
+  return { products, byId, url, reviews, reviewsFor, reviewHTML, bundlesWith, sel, priceOf, onlineOf, sepOf, savePct, fmt, online, ico, jar, photos, imgOf, delivery, shipFor, shipShort, shipLong, SHIP_FEE, FREE_AT, card, mount, rerender,
     add, addLine, openCart, closeCart, clearCart, cart: () => cart, esc, init, settings: S, PHONE, WHATSAPP, EMAIL };
 })();

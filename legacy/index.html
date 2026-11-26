@@ -105,6 +105,12 @@
     <div class="grid cols-3" id="bundles"></div>
   </section>
 
+  <section class="section" id="nutsSection">
+    <div class="section-head"><h2>Premium Nuts &amp; Dry Fruits</h2><p>Almonds, pistachios, cashews, masala peanuts and mix nuts — in 70g snack packs and 200g family packs.</p></div>
+    <div class="grid cols-3" id="nutsHome"></div>
+    <div class="promo" style="margin-top:14px">Bundle up and save: <a href="/nuts">see every nut and nut bundle</a>.</div>
+  </section>
+
   <section class="section">
     <div class="section-head"><h2>Shop by Flavour</h2><p>Five butters, one promise: just the good stuff.</p></div>
     <div class="flavours" id="flavours"></div>
@@ -169,7 +175,9 @@
     [ico.flask, "Food-scientist made", "20+ yrs in food safety"],
   ].map(([i, b, s]) => `<div class="panel"><i>${i}</i><div><b>${b}</b><span>${s}</span></div></div>`).join("");
 
-  GN.mount(document.getElementById("bundles"), () => GN.products.filter(p => p.type === "bundles"));
+  GN.mount(document.getElementById("bundles"), () => GN.products.filter(p => p.type === "bundles" && p.line !== "nuts"));
+  GN.mount(document.getElementById("nutsHome"), () => GN.products.filter(p => p.type === "nuts"));
+  if (!GN.products.some(p => p.type === "nuts")) document.getElementById("nutsSection").remove();   // no nut packs yet: no section
 
   document.getElementById("flavours").innerHTML = GN.products.filter(p => p.type === "singles").map(p => {
     const dark = ["#5a3220", "#b7773d"].includes(p.color);

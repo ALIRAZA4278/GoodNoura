@@ -165,7 +165,7 @@
       <p class="muted" id="story"></p>
       <div class="acc">
         <details open><summary>Ingredients</summary><p id="ingredients"></p></details>
-        <details><summary>Storage</summary><p>Keep in a cool, dry place out of direct sunlight, and always use a clean, dry spoon. Best enjoyed within 30 days of opening the jar. Seeing a little oil on top? That's just the natural nut oil rising — give it a good stir.</p></details>
+        <details><summary>Storage</summary><p id="storage">Keep in a cool, dry place out of direct sunlight, and always use a clean, dry spoon. Best enjoyed within 30 days of opening the jar. Seeing a little oil on top? That's just the natural nut oil rising — give it a good stir.</p></details>
         <details><summary>Allergen information</summary><p id="allergen">Contains tree nuts and/or peanuts. [Add factory allergen statement.]</p></details>
         <details><summary>Delivery &amp; payment</summary><p><span id="shipFaq">Free delivery on orders of Rs 4,000 or more.</span> Karachi in 24–48 hrs, other cities in 4–6 business days. Pay cash on delivery, or pay online and save 10%.</p></details>
       </div>
@@ -186,10 +186,11 @@
   const { ico, fmt } = GN;
   document.getElementById("shipFaq").textContent = GN.shipLong;
   const p = GN.byId(new URLSearchParams(location.search).get("p")) || GN.products[0];
-  GN.init(p.type === "bundles" ? "Bundles" : "Shop all");
+  const isNut = p.line === "nuts" || p.type === "nuts";
+  GN.init(p.type === "bundles" ? "Bundles" : isNut ? "Nuts" : "Shop all");
   document.title = `${p.name} – Good Noura`;
   document.getElementById("crumbs").innerHTML =
-    `<a href="/">Home</a> › <a href="/shop${p.type === "bundles" ? "?filter=bundles" : ""}">${p.type === "bundles" ? "Bundles" : "Shop"}</a> › <b>${p.name}</b>`;
+    `<a href="/">Home</a> › <a href="${isNut ? "/nuts" : "/shop" + (p.type === "bundles" ? "?filter=bundles" : "")}">${isNut ? "Nuts" : p.type === "bundles" ? "Bundles" : "Shop"}</a> › <b>${p.name}</b>`;
 
   // Gallery
   const shots = GN.photos(p);
@@ -230,19 +231,19 @@
   function renderInfo() {
     const s = GN.sel[p.id], price = GN.priceOf(p);
     const sizes = p.sizes && p.sizes.length > 1 ? `<p class="label">Size: ${s.size}</p><div class="opts">${p.sizes.map(([z, v], i) =>
-      `<button class="opt" data-id="${p.id}" data-size="${z}" aria-pressed="${z === s.size}">${z}<small>${i ? "Best value · family size" : "Handy jar"} · ${fmt(v)}</small></button>`).join("")}</div>`
+      `<button class="opt" data-id="${p.id}" data-size="${z}" aria-pressed="${z === s.size}">${z}<small>${isNut ? (i ? "Family pack · best value" : "Snack pack") : i ? "Best value · family size" : "Handy jar"} · ${fmt(v)}</small></button>`).join("")}</div>`
       : p.sizes ? `<p class="label">Size: ${p.sizes[0][0]}</p>` : "";
     const choice = p.choice ? `<p class="label">${p.choice.label}: ${s.choice}</p><div class="opts">${p.choice.opts.map(o =>
       `<button class="opt" data-id="${p.id}" data-choice="${o}" aria-pressed="${o === s.choice}">${o}</button>`).join("")}</div>` : "";
-    const inside = p.items ? `<p class="label">What's inside</p><ul class="contents" style="margin-bottom:16px">${p.items.map(([n, w]) => `<li><span>${n}</span><span>${w}</span></li>`).join("")}</ul>` : "";
+    const inside = p.items ? `<p class="label">What's inside</p><ul class="contents" style="margin-bottom:16px">${p.items.map(([n, w]) => `<li><span>${n}</span><span>${w || s.size || ""}</span></li>`).join("")}</ul>` : "";
     const bundles = GN.bundlesWith(p.id);
     const inBundles = bundles.length ? `<p class="in-bundles">Also in ${bundles.map(b =>
-      `<a href="${GN.url(b)}">${b.name}</a> <span>(save ${fmt(b.separate - b.price)})</span>`).join(" · ")}</p>` : "";
-    const was = p.separate ? `<span class="was">${fmt(p.separate)}</span><span class="save">Save ${fmt(p.separate - price)} (${GN.savePct(p)}%)</span>` : "";
+      `<a href="${GN.url(b)}">${b.name}</a> <span>(save up to ${fmt(Math.max(...(b.sizes ? b.sizes.map(([z, v]) => ((b.separateBySize || {})[z] || b.separate) - v) : [b.separate - b.price])))})</span>`).join(" · ")}</p>` : "";
+    const was = GN.sepOf(p) ? `<span class="was">${fmt(GN.sepOf(p))}</span><span class="save">Save ${fmt(GN.sepOf(p) - price)} (${GN.savePct(p)}%)</span>` : "";
     document.getElementById("info").innerHTML = `
       <div class="loved"><div class="faces">${["#d9a566", "#e8b04b", "#a2481f", "#f4ead9"].map((c, i) => `<span style="background:${c}">${"ASMH"[i]}</span>`).join("")}</div>
-        <div><b>Loved by 250+ families</b><small>${p.type === "bundles" ? "The easiest way to stock up." : "A breakfast-table favourite."}</small></div></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">${p.type === "bundles" ? `<span class="badge outline">Bundle</span>` : `<span class="badge outline">Nut butter</span>`}${p.badge ? `<span class="badge">${p.badge}</span>` : ""}</div>
+        <div><b>Loved by 250+ families</b><small>${p.type === "bundles" ? "The easiest way to stock up." : isNut ? "A healthy snack the whole family reaches for." : "A breakfast-table favourite."}</small></div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${p.type === "bundles" ? `<span class="badge outline">${isNut ? "Nut bundle" : "Bundle"}</span>` : `<span class="badge outline">${isNut ? "Dry fruits & nuts" : "Nut butter"}</span>`}${p.badge ? `<span class="badge">${p.badge}</span>` : ""}</div>
       <h1>${p.name}</h1>
       <div class="rating"><a href="#reviews">Read what customers say ↓</a></div>
       <p class="desc">${p.desc}</p>
@@ -272,9 +273,12 @@
   const isPB = p.type === "singles" && p.sizes.length > 1;
   let pack;
   if (p.type === "bundles") {
-    pack = GN.products.filter(x => x.type === "bundles" && x.id !== p.id);
+    pack = GN.products.filter(x => x.type === "bundles" && x.id !== p.id && (x.line === "nuts") === isNut);
     document.getElementById("packTitle").textContent = "More Bundles";
     document.getElementById("packSub").textContent = "Other boxes you might like.";
+  } else if (isNut) {
+    pack = [p, ...GN.bundlesWith(p.id)].slice(0, 3);
+    document.getElementById("packSub").textContent = "Grab a single pack, or bundle up and save.";
   } else {
     pack = [p, GN.byId(isPB ? "peanut-family-pack" : "almond-cashew-duo"), GN.byId("good-noura-collection")];
   }
@@ -293,13 +297,22 @@
   });
   document.getElementById("deliverySlot").innerHTML = GN.delivery();
 
-  document.getElementById("enjoy").innerHTML = [
+  document.getElementById("enjoy").innerHTML = (isNut ? [
+    [ico.heart, "Everyday snacking", "A handful between meals keeps you going till dinner."],
+    [ico.gift, "Tea-time & guests", "Put out a bowl with chai — it's gone before the biscuits."],
+    [ico.bowl, "Breakfast bowls", "Scatter over oats, yoghurt or cereal for extra crunch."],
+    [ico.cake, "Desserts & cooking", "Kheer, halwa, korma and biryani all love a few nuts."],
+  ] : [
     [ico.toast, "Toast & parathas", "Spread thick, top with banana or a drizzle of honey."],
     [ico.blender, "Smoothies & shakes", "A spoonful makes any shake richer and more filling."],
     [ico.bowl, "Oats & bowls", "Swirl into oats, yoghurt or chia for a nutty finish."],
     [ico.cake, "Desserts & baking", "Cookies, brownies and drizzles — or straight from the jar."],
-  ].map(([i, h, t]) => `<div class="tile">${i}<h4>${h}</h4><p>${t}</p></div>`).join("");
-  document.getElementById("proMove").innerHTML = p.type === "bundles"
+  ]).map(([i, h, t]) => `<div class="tile">${i}<h4>${h}</h4><p>${t}</p></div>`).join("");
+  const fullBox = GN.byId("full-nut-box");
+  document.getElementById("proMove").innerHTML = isNut && fullBox && p.id !== fullBox.id
+    ? `<b>Love them all?</b> Get every nut in the <a href="${GN.url(fullBox)}">Full Nut Box</a> and save.`
+    : isNut ? `Mix it up: <a href="/nuts">see every nut and bundle</a>.`
+    : p.type === "bundles"
     ? `Want a different mix? <a href="/make-your-own-bundle">Make your own bundle</a>.`
     : `<b>Pro move:</b> get it in the <a href="${GN.url(GN.byId("good-noura-collection"))}">Good Noura Collection</a> and try every butter.`;
 
@@ -309,33 +322,55 @@
     Almond: ["Almond butter smoothie", ["1 banana and 1 cup milk", "1 tbsp almond butter", "A few dates or honey", "Blend with ice"]],
     Cashew: ["Cashew butter overnight oats", ["½ cup oats + ½ cup milk", "1 tbsp cashew butter", "Top with fruit", "Leave in the fridge overnight"]],
   };
-  const [rName, rSteps] = recipes[p.flavour] || ["Peanut butter with rice cakes", ["2 tbsp peanut butter", "2–3 brown rice cakes", "Spread evenly over each cake", "Top with apple, banana or berries"]];
+  const nutRecipes = {
+    "premium-almonds": ["Soaked almonds for breakfast", ["Soak 5–7 almonds in water overnight", "Peel off the skins in the morning", "Eat with breakfast or blend into warm milk", "A simple daily habit for the whole family"]],
+    "salted-pistachio": ["Pistachio topping for kheer & kulfi", ["Shell a handful of pistachios", "Chop them roughly", "Scatter over kheer, kulfi or ice cream", "Finish with a pinch of cardamom"]],
+    "premium-cashews": ["Creamy cashew paste for korma", ["Soak ½ cup cashews in warm water for 20 minutes", "Blend with a splash of water until smooth", "Stir into your korma or curry", "Simmer for a rich, silky gravy"]],
+    "roasted-cashews": ["Chaat masala cashews", ["Warm a handful of roasted cashews in a pan", "Sprinkle chaat masala and a pinch of red chilli", "Add a squeeze of lemon", "Serve warm with chai"]],
+    "masala-peanuts": ["Quick peanut chaat", ["1 cup masala peanuts", "Add chopped onion, tomato and coriander", "Squeeze in fresh lemon juice", "Toss and serve straight away"]],
+  };
+  const nutRecipe = isNut ? nutRecipes[p.id] || ["Breakfast trail-mix bowl", ["1 cup yoghurt or cooked oats", "A good handful of mixed nuts", "Add sliced banana or chopped dates", "Drizzle with honey"]] : null;
+  const [rName, rSteps] = nutRecipe || recipes[p.flavour] || ["Peanut butter with rice cakes", ["2 tbsp peanut butter", "2–3 brown rice cakes", "Spread evenly over each cake", "Top with apple, banana or berries"]];
   document.getElementById("recipeName").textContent = rName;
   document.getElementById("recipeSteps").innerHTML = rSteps.map(s => `<li>${s}</li>`).join("");
   const rImg = { Chocolate: "chocolate", Almond: "almond", Cashew: "cashew" }[p.flavour] || "peanut";
-  document.getElementById("recipeArt").innerHTML = `<img src="img/gen/recipe-${rImg}.jpg" alt="${GN.esc(rName)}" loading="lazy">`;
+  const rSrc = isNut ? ((p.sizeGallery && p.sizeGallery["200g"] && p.sizeGallery["200g"][0][1]) || p.img) : `img/gen/recipe-${rImg}.jpg`;
+  document.getElementById("recipeArt").innerHTML = `<img src="${rSrc}" alt="${GN.esc(rName)}" loading="lazy">`;
 
-  document.getElementById("story").textContent = p.type === "bundles"
+  document.getElementById("story").textContent = isNut ? (p.type === "bundles"
+      ? "Every pouch in this box is picked and packed the same way: whole, fresh nuts sealed in a resealable gold pouch."
+      : `${p.desc} Carefully picked and packed fresh in a resealable gold pouch.`)
+    : p.type === "bundles"
     ? "Every jar in this box is made the same way: carefully picked nuts, roasted for a deep flavour and ground in small batches."
     : `${p.desc} Made in small batches from carefully picked nuts.`;
   document.getElementById("ingredients").textContent = p.type === "bundles"
-    ? "See each jar's page for its ingredients." : p.ingredients || "[Ingredients list — e.g. roasted peanuts, salt.]";
+    ? `See each ${isNut ? "pack" : "jar"}'s page for its ingredients.` : p.ingredients || "[Ingredients list — e.g. roasted peanuts, salt.]";
   if (p.allergen) document.getElementById("allergen").textContent = p.allergen;
+  else if (isNut) document.getElementById("allergen").textContent = "Contains tree nuts and/or peanuts.";
+  if (isNut) document.getElementById("storage").textContent = "Keep in a cool, dry place out of direct sunlight. Seal the zip pouch tightly after every use, and enjoy within 30 days of opening for the best crunch.";
 
   // Side column: size guide for peanut butter, otherwise what's inside / good to know
-  document.getElementById("sideCol").innerHTML = isPB
+  const renderSide = () => { document.getElementById("sideCol").innerHTML = isNut && p.type !== "bundles"
+    ? `<h2>Which Size Is Right?</h2>
+       <div class="panel size-card"><span class="w">70g</span><div><b>${fmt(p.sizes[0][1])} · Snack pack</b><p>Pop it in a bag, lunchbox or car — and an easy way to try it.</p></div></div>
+       <div class="panel size-card" style="border-color:var(--gold)"><span class="w">200g</span><div><b>${fmt(p.sizes[1][1])} · Family pack</b><p>Better value for the whole family and for guests.</p></div></div>`
+    : isPB
     ? `<h2>Which Size Is Right?</h2>
        <div class="panel size-card"><span class="w">340g</span><div><b>${fmt(p.sizes[0][1])} · Handy jar</b><p>For one or two people — and an easy way to try it.</p></div></div>
        <div class="panel size-card" style="border-color:var(--gold)"><span class="w">510g</span><div><b>${fmt(p.sizes[1][1])} · Family size</b><p>Better value for families and daily spreaders.</p></div></div>`
     : p.type === "bundles"
     ? `<h2>Why Bundle?</h2>
-       <div class="panel size-card"><span class="w">${GN.savePct(p)}%</span><div><b>Saved vs. single jars</b><p>${fmt(p.separate)} if bought separately.</p></div></div>
-       <div class="panel size-card" style="border-color:var(--gold)"><span class="w">+10%</span><div><b>When you pay online</b><p>Pay ${fmt(p.onlinePrice)} instead of ${fmt(p.price)}.</p></div></div>`
+       <div class="panel size-card"><span class="w">${GN.savePct(p)}%</span><div><b>Saved vs. single ${isNut ? "packs" : "jars"}</b><p>${fmt(GN.sepOf(p))} if bought separately${p.sizes ? ` (${GN.sel[p.id].size} packs)` : ""}.</p></div></div>
+       <div class="panel size-card" style="border-color:var(--gold)"><span class="w">+10%</span><div><b>When you pay online</b><p>Pay ${fmt(GN.onlineOf(p))} instead of ${fmt(GN.priceOf(p))}.</p></div></div>`
     : `<h2>Good to Know</h2>
        <div class="panel size-card"><span class="w">210g</span><div><b>${fmt(p.sizes[0][1])} · Premium jar</b><p>Rich and concentrated — a little goes a long way.</p></div></div>
        <div class="panel size-card" style="border-color:var(--gold)"><span class="w">Duo</span><div><b>Pair it and save</b><p>Get almond + cashew together in the <a class="gold" href="${GN.url(GN.byId("almond-cashew-duo"))}">Duo</a>.</p></div></div>`;
 
-  GN.mount(document.getElementById("pantry"), () => GN.products.filter(x => x.type === "singles" && x.id !== p.id).slice(0, 4));
+  };
+  renderSide();
+  document.addEventListener("gn:select", renderSide);
+
+  GN.mount(document.getElementById("pantry"), () => GN.products.filter(x => x.type === (isNut ? "nuts" : "singles") && x.id !== p.id).slice(0, 4));
 </script>
 </body>
 </html>
