@@ -534,6 +534,7 @@ function editProduct(p) {
         <label class="check"><input type="checkbox" name="nutLine" ${p.line === "nuts" ? "checked" : ""}> Nut bundle <small>(shown under Nuts on the shop page, with the nut packs)</small></label>
         <fieldset><legend>What's inside (shown on the page)</legend><div class="rows" id="items">${rowsHTML("item", p.items && p.items.length ? p.items : [["", ""]], ["Jar name", "Size (e.g. 510g)"])}</div>
           <button type="button" class="b sm" data-addrow="items" style="justify-self:start">+ Add row</button></fieldset>
+        ${p.sizes && p.sizes.length > 1 ? `<fieldset><legend>What's inside at a particular size (optional)</legend>${p.sizes.map(([z]) => `<label>${esc(z)} box <small>(one item per line; leave empty to use the list above)</small><textarea data-isz="${esc(z)}" rows="4">${esc(((p.itemsBySize || {})[z] || []).map(i => i[0]).join("\n"))}</textarea></label>`).join("")}</fieldset>` : ""}
         <fieldset><legend>Jars or packs in this bundle (used for "Also in" and cart suggestions)</legend><div class="chips">${singles.map(s => `<label class="check"><input type="checkbox" name="contains" value="${esc(s.id)}" ${(p.contains || []).includes(s.id) ? "checked" : ""}> ${esc(s.name)}</label>`).join("")}</div></fieldset>
         <fieldset><legend>Customer choice (optional)</legend>
           <div class="row"><label>Question<input name="choiceLabel" value="${esc(p.choice ? p.choice.label : "")}" placeholder="e.g. Choose your peanut butter"></label>
@@ -590,6 +591,8 @@ function editProduct(p) {
       const bs = rows("#bsizes", "bsize");
       if (!bs.length) throw new Error("Add at least one size with a price.");
       Object.assign(data, { sizes: bs.map(r => [r[0], r[1]]), separateBySize: Object.fromEntries(bs.filter(r => r[2]).map(r => [r[0], r[2]])) });
+      const ib = {}; $$("[data-isz]").forEach(t => { const l = t.value.split("\n").map(x => x.trim()).filter(Boolean); if (l.length) ib[t.dataset.isz] = l.map(n => [n, t.dataset.isz]); });
+      data.itemsBySize = ib;
     }
     if (isB) Object.assign(data, { price: f.get("price") || (data.sizes && data.sizes[0][1]), onlinePrice: f.get("onlinePrice"), separate: f.get("separate"), items: rows("#items", "item"), contains: f.getAll("contains"),
       ribbon: f.get("ribbon"), featured: !!f.get("featured"), color: p.color,
