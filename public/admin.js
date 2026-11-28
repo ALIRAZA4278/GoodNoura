@@ -585,7 +585,7 @@ function editProduct(p) {
     e.preventDefault();
     const f = new FormData(form), rows = (sel, k) => $$(sel + " .r").map(r => { const x = [$(`[data-${k}="0"]`, r).value.trim(), $(`[data-${k}="1"]`, r).value.trim()]; const ph = $(`[data-${k}="2"]`, r); if (ph && ph.value.trim()) x.push(ph.value.trim()); return x; }).filter(r => r[0] || r[1]);
     const data = { type: p.type, name: f.get("name"), sub: f.get("sub"), badge: f.get("badge"), desc: f.get("desc"), img: f.get("img"),
-      gallery: rows("#gallery", "gal"), lids: p.lids, sizeGallery: p.sizeGallery, line: isB ? (f.get("nutLine") ? "nuts" : "") : p.line };
+      gallery: rows("#gallery", "gal"), lids: p.lids, sizeGallery: p.sizeGallery, itemsBySize: p.itemsBySize, line: isB ? (f.get("nutLine") ? "nuts" : "") : p.line };
     if (isB && p.sizes) {   // sized bundles (the nut boxes): a price and a "bought separately" price for each size
       const bs = rows("#bsizes", "bsize");
       if (!bs.length) throw new Error("Add at least one size with a price.");

@@ -231,11 +231,12 @@
   function renderInfo() {
     const s = GN.sel[p.id], price = GN.priceOf(p);
     const sizes = p.sizes && p.sizes.length > 1 ? `<p class="label">Size: ${s.size}</p><div class="opts">${p.sizes.map(([z, v], i) =>
-      `<button class="opt" data-id="${p.id}" data-size="${z}" aria-pressed="${z === s.size}">${z}<small>${isNut ? (i ? "Family pack · best value" : "Snack pack") : i ? "Best value · family size" : "Handy jar"} · ${fmt(v)}</small></button>`).join("")}</div>`
+      `<button class="opt" data-id="${p.id}" data-size="${z}" aria-pressed="${z === s.size}">${z}<small>${isNut ? (parseInt(z) > 100 ? (i ? "Family pack · best value" : "Family pack") : "Snack pack") : i ? "Best value · family size" : "Handy jar"} · ${fmt(v)}</small></button>`).join("")}</div>`
       : p.sizes ? `<p class="label">Size: ${p.sizes[0][0]}</p>` : "";
     const choice = p.choice ? `<p class="label">${p.choice.label}: ${s.choice}</p><div class="opts">${p.choice.opts.map(o =>
       `<button class="opt" data-id="${p.id}" data-choice="${o}" aria-pressed="${o === s.choice}">${o}</button>`).join("")}</div>` : "";
-    const inside = p.items ? `<p class="label">What's inside</p><ul class="contents" style="margin-bottom:16px">${p.items.map(([n, w]) => `<li><span>${n}</span><span>${w || s.size || ""}</span></li>`).join("")}</ul>` : "";
+    const insideItems = (p.itemsBySize && p.itemsBySize[s.size]) || p.items;   // a box can hold different things at different sizes
+    const inside = insideItems ? `<p class="label">What's inside</p><ul class="contents" style="margin-bottom:16px">${insideItems.map(([n, w]) => `<li><span>${n}</span><span>${w || s.size || ""}</span></li>`).join("")}</ul>` : "";
     const bundles = GN.bundlesWith(p.id);
     const inBundles = bundles.length ? `<p class="in-bundles">Also in ${bundles.map(b =>
       `<a href="${GN.url(b)}">${b.name}</a> <span>(save up to ${fmt(Math.max(...(b.sizes ? b.sizes.map(([z, v]) => ((b.separateBySize || {})[z] || b.separate) - v) : [b.separate - b.price])))})</span>`).join(" · ")}</p>` : "";
@@ -352,8 +353,9 @@
   // Side column: size guide for peanut butter, otherwise what's inside / good to know
   const renderSide = () => { document.getElementById("sideCol").innerHTML = isNut && p.type !== "bundles"
     ? `<h2>Which Size Is Right?</h2>
-       <div class="panel size-card"><span class="w">70g</span><div><b>${fmt(p.sizes[0][1])} · Snack pack</b><p>Pop it in a bag, lunchbox or car — and an easy way to try it.</p></div></div>
-       <div class="panel size-card" style="border-color:var(--gold)"><span class="w">200g</span><div><b>${fmt(p.sizes[1][1])} · Family pack</b><p>Better value for the whole family and for guests.</p></div></div>`
+       ${p.sizes.map(([z, v]) => parseInt(z) > 100
+         ? `<div class="panel size-card" style="border-color:var(--gold)"><span class="w">${z}</span><div><b>${fmt(v)} · Family pack</b><p>Better value for the whole family and for guests.</p></div></div>`
+         : `<div class="panel size-card"><span class="w">${z}</span><div><b>${fmt(v)} · Snack pack</b><p>Pop it in a bag, lunchbox or car — and an easy way to try it.</p></div></div>`).join("")}`
     : isPB
     ? `<h2>Which Size Is Right?</h2>
        <div class="panel size-card"><span class="w">340g</span><div><b>${fmt(p.sizes[0][1])} · Handy jar</b><p>For one or two people — and an easy way to try it.</p></div></div>

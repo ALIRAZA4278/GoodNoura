@@ -147,12 +147,13 @@ const GN = (() => {
     const s = sel[p.id], price = priceOf(p);
     const badges = p.type === "bundles"
       ? `<div class="badges">${p.badge ? `<span class="badge">${p.badge}</span>` : ""}<span class="badge dark">Save ${savePct(p)}%</span></div>` : "";
-    const contents = p.items ? `<ul class="contents">${p.items.map(([n, w]) => `<li><span>${n}</span><span>${w || s.size || ""}</span></li>`).join("")}</ul>` : "";
+    const items = (p.itemsBySize && p.itemsBySize[s.size]) || p.items;   // a box can hold different things at different sizes
+    const contents = items ? `<ul class="contents">${items.map(([n, w]) => `<li><span>${n}</span><span>${w || s.size || ""}</span></li>`).join("")}</ul>` : "";
     const choice = p.choice ? `<p class="opt-label">${p.choice.label}</p><div class="opts">${p.choice.opts.map(o =>
       `<button class="opt" data-id="${p.id}" data-choice="${o}" aria-pressed="${o === s.choice}">${o}</button>`).join("")}</div>` : "";
     const sizes = p.sizes && p.sizes.length > 1
       ? `<div class="opts">${p.sizes.map(([z, v]) => `<button class="opt" data-id="${p.id}" data-size="${z}" aria-pressed="${z === s.size}">${z}<small>${fmt(v)}</small></button>`).join("")}</div>`
-      : p.sizes ? `<div class="opts"><span class="opt" aria-pressed="true" style="flex:none">${p.sizes[0][0]}<small>Jar</small></span></div>` : "";
+      : p.sizes ? `<div class="opts"><span class="opt" aria-pressed="true" style="flex:none">${p.sizes[0][0]}<small>${p.type === "nuts" || p.line === "nuts" ? "Pack" : "Jar"}</small></span></div>` : "";
     const was = sepOf(p) ? `<span class="was">${fmt(sepOf(p))}</span><span class="save">Save ${fmt(sepOf(p) - price)}</span>` : "";
     return `<article class="card${p.featured ? " featured" : ""}">
       ${p.ribbon ? `<span class="ribbon">${p.ribbon}</span>` : ""}
